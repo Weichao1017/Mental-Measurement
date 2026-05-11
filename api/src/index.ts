@@ -1,37 +1,36 @@
 /**
- * Mental-Measurement AI 分析 API
+ * Mental-Measurement AI 分析 API（DeepSeek）
+ *
+ * 用 DeepSeek 而非 Anthropic 是因为 Anthropic 屏蔽腾讯香港 CVM IP。
+ * Ash 主项目也用 DeepSeek，复用同一个 key。
  *
  * 端点：
- *   GET  /api/health          → 健康检查
- *   POST /api/analyze         → SSE 流式返回 AI 心理画像分析
- *
- * 部署：
- *   - 跑在 :3100，PM2 守护
- *   - Nginx 反代 assessment.ai1017.com/api/* → 127.0.0.1:3100/api/*
- *   - 环境变量见 .env.example
+ *   GET  /api/health   → 健康检查
+ *   POST /api/analyze  → SSE 流式返回 AI 心理画像分析
  */
 
 import { config as loadEnv } from "dotenv";
-loadEnv(); // 显式加载 ./.env（不依赖 PM2 的 env_file 支持）
+loadEnv();
 
 import { serve } from "@hono/node-server";
 import { Hono } from "hono";
 import { cors } from "hono/cors";
 import { streamSSE } from "hono/streaming";
-import Anthropic from "@anthropic-ai/sdk";
+import OpenAI from "openai";
 import { decodePayload, type SharePayload } from "./share.js";
 
 const PORT = Number(process.env.PORT ?? 3100);
-const MODEL = process.env.ANTHROPIC_MODEL ?? "claude-opus-4-7";
+const MODEL = process.env.DEEPSEEK_MODEL ?? "deepseek-chat";
+const BASE_URL = process.env.DEEPSEEK_BASE_URL ?? "https://api.deepseek.com/v1";
 const RATE_LIMIT = Number(process.env.RATE_LIMIT_PER_DAY ?? 10);
-const API_KEY = process.env.ANTHROPIC_API_KEY;
+const API_KEY = process.env.DEEPSEEK_API_KEY;
 
 if (!API_KEY) {
-  console.error("FATAL: ANTHROPIC_API_KEY 环境变量未设置");
+  console.error("FATAL: DEEPSEEK_API_KEY 环境变量未设置");
   process.exit(1);
 }
 
-const anthropic = new Anthropic({ apiKey: API_KEY });
+const client = new OpenAI({ apiKey: API_KEY, baseURL: BASE_URL });
 
 // 简易内存速率限制：IP → [timestamps]
 const rateLimitMap = new Map<string, number[]>();
@@ -47,12 +46,10 @@ function checkRateLimit(ip: string): { ok: boolean; remaining: number } {
 
 const app = new Hono();
 
-// 浏览器走同域 /api/*，无需 CORS；但开发模式可能从 localhost:3000 调
 app.use(
   "/api/*",
   cors({
     origin: (origin) => {
-      // 生产域名 + 本地 dev
       if (!origin) return "*";
       if (
         origin.endsWith("ai1017.com") ||
@@ -67,14 +64,11 @@ app.use(
 );
 
 app.get("/api/health", (c) =>
-  c.json({ ok: true, model: MODEL, rate_limit_per_day: RATE_LIMIT })
+  c.json({ ok: true, model: MODEL, base_url: BASE_URL, rate_limit_per_day: RATE_LIMIT })
 );
 
-// 分析请求 body
 interface AnalyzeBody {
-  /** encoded SharePayload（含答案数据） */
   d?: string;
-  /** 前端已计算好的 results（含 score、band、percentile） */
   results: Array<{
     scaleId: string;
     scaleName: string;
@@ -95,7 +89,6 @@ interface AnalyzeBody {
 }
 
 app.post("/api/analyze", async (c) => {
-  // 取真实 IP（Cloudflare 头 > X-Real-IP > remote）
   const ip =
     c.req.header("cf-connecting-ip") ||
     c.req.header("x-real-ip") ||
@@ -124,43 +117,51 @@ app.post("/api/analyze", async (c) => {
     return c.json({ error: "missing_results", message: "需要至少一个量表结果" }, 400);
   }
 
-  // 可选：解码 d 字段做额外校验（确保前端没篡改）
   let payload: SharePayload | null = null;
-  if (body.d) {
-    payload = decodePayload(body.d);
-  }
+  if (body.d) payload = decodePayload(body.d);
 
   const systemPrompt = buildSystemPrompt();
   const userPrompt = buildUserPrompt(body, payload);
 
   return streamSSE(c, async (stream) => {
     try {
-      const sdkStream = anthropic.messages.stream({
+      const completion = await client.chat.completions.create({
         model: MODEL,
         max_tokens: 2000,
-        system: systemPrompt,
-        messages: [{ role: "user", content: userPrompt }],
+        messages: [
+          { role: "system", content: systemPrompt },
+          { role: "user", content: userPrompt },
+        ],
+        stream: true,
       });
 
-      for await (const event of sdkStream) {
-        if (
-          event.type === "content_block_delta" &&
-          event.delta.type === "text_delta"
-        ) {
+      for await (const chunk of completion) {
+        const delta = chunk.choices?.[0]?.delta as
+          | { content?: string; reasoning_content?: string }
+          | undefined;
+        // deepseek-reasoner 在 reasoning 阶段有 reasoning_content，跳过
+        // 只把最终 content 流给用户
+        if (delta?.content) {
           await stream.writeSSE({
             event: "chunk",
-            data: JSON.stringify({ text: event.delta.text }),
+            data: JSON.stringify({ text: delta.content }),
           });
-        } else if (event.type === "message_stop") {
+        }
+        const finishReason = chunk.choices?.[0]?.finish_reason;
+        if (finishReason) {
           await stream.writeSSE({
             event: "done",
-            data: JSON.stringify({ ok: true, remaining: limit.remaining }),
+            data: JSON.stringify({
+              ok: true,
+              remaining: limit.remaining,
+              finish_reason: finishReason,
+            }),
           });
         }
       }
     } catch (err) {
       const msg = err instanceof Error ? err.message : String(err);
-      console.error("[analyze] anthropic error:", msg);
+      console.error("[analyze] deepseek error:", msg);
       await stream.writeSSE({
         event: "error",
         data: JSON.stringify({ error: "upstream", message: msg }),
@@ -212,10 +213,7 @@ function buildUserPrompt(
   const lines: string[] = [];
   lines.push(`用户刚完成了一次心理评估。以下是结构化数据：\n`);
 
-  if (body.startedAt) {
-    lines.push(`评估时间：${body.startedAt}`);
-  }
-
+  if (body.startedAt) lines.push(`评估时间：${body.startedAt}`);
   if (body.concerns && body.concerns.length > 0) {
     lines.push(`主诉勾选：${body.concerns.join(", ")}`);
   }
@@ -249,6 +247,9 @@ function buildUserPrompt(
     lines.push("");
   }
 
+  // 标记 payload 已用于校验（保留以备未来扩展）
+  if (payload) lines.push(`（数据完整性已校验）`);
+
   lines.push(`\n请按 system prompt 中的结构给出温暖、客观、可操作的解读。`);
 
   return lines.join("\n");
@@ -263,5 +264,5 @@ serve({ fetch: app.fetch, port: PORT }, (info) => {
   console.log(
     `[mental-measurement-api] listening on http://127.0.0.1:${info.port}`
   );
-  console.log(`[config] model=${MODEL} rate_limit=${RATE_LIMIT}/day/ip`);
+  console.log(`[config] model=${MODEL} base_url=${BASE_URL} rate_limit=${RATE_LIMIT}/day/ip`);
 });

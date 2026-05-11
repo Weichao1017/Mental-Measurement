@@ -5,11 +5,12 @@ import Link from "next/link";
 import Container from "@/components/Container";
 import ResultCard from "@/components/ResultCard";
 import ShareDialog from "@/components/ShareDialog";
+import AIAnalysisCard from "@/components/AIAnalysisCard";
 import { getScale } from "@/lib/scales";
 import { scoreScale } from "@/lib/scoring";
 import { loadSession, clearSession } from "@/lib/store";
 import { buildShareUrl, encodeSession } from "@/lib/share";
-import type { SessionState, ScaleResult } from "@/lib/types";
+import type { SessionState, ScaleResult, Scale } from "@/lib/types";
 
 export default function ResultsPage() {
   const [session, setSession] = useState<SessionState | null>(null);
@@ -24,14 +25,16 @@ export default function ResultsPage() {
     return buildShareUrl(encodeSession(session));
   }, [session]);
 
-  const results = useMemo<Array<{ scaleId: string; result: ScaleResult }>>(() => {
+  const results = useMemo<
+    Array<{ scaleId: string; scale: Scale; result: ScaleResult }>
+  >(() => {
     if (!session) return [];
-    const out: Array<{ scaleId: string; result: ScaleResult }> = [];
+    const out: Array<{ scaleId: string; scale: Scale; result: ScaleResult }> = [];
     for (const scaleId of session.battery) {
       const scale = getScale(scaleId);
       const response = session.responses[scaleId];
       if (!scale || !response) continue;
-      out.push({ scaleId, result: scoreScale(scale, response) });
+      out.push({ scaleId, scale, result: scoreScale(scale, response) });
     }
     return out;
   }, [session]);
@@ -85,6 +88,11 @@ export default function ResultsPage() {
             return <ResultCard key={scaleId} scale={scale} result={result} />;
           })}
         </div>
+
+        <AIAnalysisCard
+          session={session}
+          results={results.map((r) => ({ scale: r.scale, result: r.result }))}
+        />
 
         <div className="mt-10 rounded-2xl border border-sage-200 bg-sage-50 p-6">
           <h2 className="mb-2 font-serif text-lg text-ink">把这份结果交给老师</h2>

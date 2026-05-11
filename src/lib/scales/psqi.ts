@@ -78,12 +78,17 @@ const DIFFICULTY_OPTIONS: LikertOption[] = [
 ];
 
 // 帮手函数：构造频率题
-const freqItem = (index: number, dimension: string, text: string): ScaleItem => ({
+const freqItem = (
+  index: number,
+  dimension: string,
+  text: string,
+  sourceRef: string
+): ScaleItem => ({
   index,
   dimension,
   text,
   options: FREQ_OPTIONS,
-  sourceRef: `PSQI Q5${String.fromCharCode(96 + index - 4)}`,
+  sourceRef,
 });
 
 const items: ScaleItem[] = [
@@ -116,17 +121,17 @@ const items: ScaleItem[] = [
     options: SLEEP_DURATION_OPTIONS,
     sourceRef: "PSQI Q4",
   },
-  // Q5-14：10 种睡眠困扰频率
-  freqItem(5, "C5", "过去一个月，你 30 分钟内不能入睡的频率是？"),
-  freqItem(6, "C5", "过去一个月，你半夜或凌晨醒来的频率是？"),
-  freqItem(7, "C5", "过去一个月，你必须起夜上厕所的频率是？"),
-  freqItem(8, "C5", "过去一个月，你呼吸不畅或感到喘不上气的频率是？"),
-  freqItem(9, "C5", "过去一个月，你大声咳嗽或打鼾的频率是？"),
-  freqItem(10, "C5", "过去一个月，你感觉太冷的频率是？"),
-  freqItem(11, "C5", "过去一个月，你感觉太热的频率是？"),
-  freqItem(12, "C5", "过去一个月，你做噩梦的频率是？"),
-  freqItem(13, "C5", "过去一个月，你因疼痛影响睡眠的频率是？"),
-  freqItem(14, "C5", "过去一个月，因其他原因影响睡眠的频率是？"),
+  // Q5-14：10 种睡眠困扰频率（来自 PSQI 原版 Q5a-Q5j）
+  freqItem(5, "C5", "过去一个月，你 30 分钟内不能入睡的频率是？", "PSQI Q5a"),
+  freqItem(6, "C5", "过去一个月，你半夜或凌晨醒来的频率是？", "PSQI Q5b"),
+  freqItem(7, "C5", "过去一个月，你必须起夜上厕所的频率是？", "PSQI Q5c"),
+  freqItem(8, "C5", "过去一个月，你呼吸不畅或感到喘不上气的频率是？", "PSQI Q5d"),
+  freqItem(9, "C5", "过去一个月，你大声咳嗽或打鼾的频率是？", "PSQI Q5e"),
+  freqItem(10, "C5", "过去一个月，你感觉太冷的频率是？", "PSQI Q5f"),
+  freqItem(11, "C5", "过去一个月，你感觉太热的频率是？", "PSQI Q5g"),
+  freqItem(12, "C5", "过去一个月，你做噩梦的频率是？", "PSQI Q5h"),
+  freqItem(13, "C5", "过去一个月，你因疼痛影响睡眠的频率是？", "PSQI Q5i"),
+  freqItem(14, "C5", "过去一个月，因其他原因影响睡眠的频率是？", "PSQI Q5j"),
   // Q15：主观评价
   {
     index: 15,
@@ -135,10 +140,10 @@ const items: ScaleItem[] = [
     options: QUALITY_OPTIONS,
     sourceRef: "PSQI Q9",
   },
-  // Q16：催眠药频率
-  freqItem(16, "C6", "过去一个月，你服用催眠药物（处方或非处方）的频率是？"),
-  // Q17：日间嗜睡频率
-  freqItem(17, "C7", "过去一个月，你在开车、用餐或社交活动中难以保持清醒的频率是？"),
+  // Q16：催眠药频率（PSQI Q6）
+  freqItem(16, "C6", "过去一个月，你服用催眠药物（处方或非处方）的频率是？", "PSQI Q6"),
+  // Q17：日间嗜睡频率（PSQI Q7）
+  freqItem(17, "C7", "过去一个月，你在开车、用餐或社交活动中难以保持清醒的频率是？", "PSQI Q7"),
   // Q18：保持精力的困难度
   {
     index: 18,
@@ -158,7 +163,9 @@ export const psqi: Scale = {
   estimatedMinutes: 4,
   isCore: false,
   highIsBetter: false,
-  dimensionMaxScore: 54,
+  // 不设 dimensionMaxScore：PSQI 各维度题数不一致（C1=1 题, C5=10 题），
+  // 用统一最大分会让 "2 / 54" 跟 band "困扰较多" 视觉矛盾。
+  // ResultCard 已优雅 fallback：不传则不显示分母。
   triggers: ["sleep_problems"],
   instructions:
     "下列问题与你最近 1 个月的睡眠状况有关。请回答最符合你过去 1 个月内大多数白天和晚上情况的答案。每题选项各不相同，请仔细看选项标签。",

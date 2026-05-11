@@ -33,6 +33,8 @@ export const ecr12: Scale = {
   timeFrame: "通常情况下",
   estimatedMinutes: 3,
   isCore: false,
+  highIsBetter: false,
+  dimensionMaxScore: 7,
   triggers: ["relationship_issues"],
   instructions:
     "下面是关于您在亲密关系（恋人/伴侣）中感受的描述。请根据您一般情况下在这类关系中的真实感受作答。如果您目前没有恋爱关系，请回想过去最近的一段关系或假想一段关系来回答。",

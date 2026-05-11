@@ -51,6 +51,8 @@ export const psqi: Scale = {
   timeFrame: "过去一个月",
   estimatedMinutes: 5,
   isCore: false,
+  highIsBetter: false,
+  dimensionMaxScore: 21,
   triggers: ["sleep_problems"],
   instructions:
     "下列问题与您最近 1 个月的睡眠状况有关。请回答最符合您过去 1 个月内大多数白天和晚上情况的答案。",

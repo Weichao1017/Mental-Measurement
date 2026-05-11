@@ -38,7 +38,10 @@ export const ffmq15: Scale = {
   description: "测量当下觉察、描述、不评判、不反应等正念能力的五个维度",
   timeFrame: "通常情况下",
   estimatedMinutes: 3,
-  isCore: true,
+  isCore: false,
+  highIsBetter: true,
+  dimensionMaxScore: 15,
+  triggers: ["mindfulness"],
   instructions:
     "请根据您一般情况下的真实状态判断每一项陈述对您的符合程度，不要在任何一项上花太多时间。",
   options: [

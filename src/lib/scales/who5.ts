@@ -27,7 +27,10 @@ export const who5: Scale = {
   description: "评估过去两周内主观幸福感水平（正向情绪、活力、生活兴趣）",
   timeFrame: "过去两周",
   estimatedMinutes: 1,
-  isCore: true,
+  isCore: false,
+  highIsBetter: true,
+  dimensionMaxScore: 100,
+  triggers: ["wellbeing"],
   instructions:
     "下列陈述描述了您在过去两周内的感受。请在每一项中选择最贴近您实际情况的选项。",
   options: [

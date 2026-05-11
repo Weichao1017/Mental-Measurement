@@ -20,50 +20,43 @@ export default function HomePage() {
 
         <div className="card mb-8">
           <h2 className="mb-4 font-serif text-xl text-ink">这份评估包括什么</h2>
-          <ul className="space-y-3 text-brand-800">
-            <li>
-              <span className="font-medium">情绪症状（DASS-21）</span>
-              <span className="text-sm text-brand-600">
-                ·过去一周抑郁、焦虑、压力的强度
-              </span>
-            </li>
-            <li>
-              <span className="font-medium">主观幸福感（WHO-5）</span>
-              <span className="text-sm text-brand-600">
-                ·过去两周的活力、平静、对生活的兴趣
-              </span>
-            </li>
-            <li>
-              <span className="font-medium">正念能力（FFMQ-15）</span>
-              <span className="text-sm text-brand-600">
-                ·觉察、描述、不评判、不反应等五个维度
-              </span>
-            </li>
-            <li>
-              <span className="font-medium">自我关怀（SCS-SF）</span>
-              <span className="text-sm text-brand-600">
-                ·你对自己的善意、共同人性的感受、对体验的正念态度
-              </span>
-            </li>
+          <p className="mb-4 text-sm leading-relaxed text-brand-700">
+            <span className="font-medium text-ink">核心：</span>
+            DASS-21 抑郁焦虑压力量表（21 题，约 4 分钟）——所有人都做。
+          </p>
+          <p className="mb-2 text-sm leading-relaxed text-brand-700">
+            <span className="font-medium text-ink">可选模块：</span>
+            根据你之后勾选的兴趣方向，加做不同的量表（每个 3-8 分钟）：
+          </p>
+          <ul className="ml-4 space-y-1 text-sm text-brand-600">
+            <li>· 主观幸福感（WHO-5）/ 正念能力（FFMQ）/ 自我关怀（SCS）</li>
+            <li>· 身体觉察（MAIA）/ 情绪调节（DERS）/ 睡眠（PSQI）/ 依恋（ECR）</li>
           </ul>
           <p className="mt-5 text-sm text-brand-500">
-            根据你之后勾选的主诉，还可能加做身体觉察、情绪调节、睡眠、依恋关系等扩展模块。
+            想直接选某一个量表做？去
+            <Link href="/library/" className="text-sage-700 underline">测评题库</Link>
+            。
           </p>
         </div>
 
         <div className="card mb-10 border-sage-200 bg-sage-50">
           <h2 className="mb-3 font-serif text-lg text-ink">在你开始之前</h2>
           <ul className="space-y-2 text-sm leading-relaxed text-brand-800">
-            <li>· 整个评估大约需要 <strong>12 – 20 分钟</strong>，建议在安静的环境下一次性完成</li>
+            <li>· 完整评估大约 <strong>5 – 25 分钟</strong>（取决于你选了多少可选模块）</li>
             <li>· 请按你<strong>近期真实</strong>的感受作答，不要思考"应该选什么"</li>
             <li>· 结果只用于帮助你和你的老师更好地了解你，不构成任何临床诊断</li>
             <li>· 如果在评估中触发了不舒服的感受，随时可以暂停</li>
           </ul>
         </div>
 
-        <Link href="/intake/" className="btn-primary">
-          开始评估 →
-        </Link>
+        <div className="flex flex-wrap gap-3">
+          <Link href="/intake/" className="btn-primary">
+            开始评估 →
+          </Link>
+          <Link href="/library/" className="btn-ghost">
+            浏览题库
+          </Link>
+        </div>
       </div>
 
       <footer className="mt-20 border-t border-brand-200 pt-6 text-xs text-brand-400">

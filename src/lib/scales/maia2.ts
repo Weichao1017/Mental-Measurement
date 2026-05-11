@@ -159,6 +159,8 @@ export const maia2: Scale = {
   timeFrame: "通常情况下",
   estimatedMinutes: 8,
   isCore: false,
+  highIsBetter: true,
+  dimensionMaxScore: 5,
   triggers: ["body_disconnect"],
   instructions:
     "下面是关于您与自己身体之间关系的描述。请根据您一般情况下的真实状态作答。"

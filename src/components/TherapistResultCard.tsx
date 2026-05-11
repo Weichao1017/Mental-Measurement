@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import type { ScaleResult, Scale, ScaleResponse } from "@/lib/types";
+import { getPercentile } from "@/lib/norms";
 
 interface Props {
   scale: Scale;
@@ -67,7 +68,8 @@ export default function TherapistResultCard({ scale, result, response }: Props) 
 
       <div className="grid gap-3 sm:grid-cols-2">
         {result.dimensions.map((d) => {
-          const bandClass = bandColor(d.band?.level);
+          const bandClass = bandColor(d.band?.level, scale.highIsBetter);
+          const percentile = getPercentile(scale.id, d.code, d.finalScore);
           return (
             <div
               key={d.code}
@@ -77,6 +79,11 @@ export default function TherapistResultCard({ scale, result, response }: Props) 
                 <h4 className="text-sm font-medium text-ink">{d.name}</h4>
                 <div className="font-mono text-xl tabular-nums text-ink">
                   {formatScore(d.finalScore, scale.scoringMethod)}
+                  {scale.dimensionMaxScore ? (
+                    <span className="text-xs text-brand-400">
+                      {" "}/ {scale.dimensionMaxScore}
+                    </span>
+                  ) : null}
                 </div>
               </div>
               {d.band ? (
@@ -85,6 +92,11 @@ export default function TherapistResultCard({ scale, result, response }: Props) 
                 >
                   {d.band.label}
                 </div>
+              ) : null}
+              {percentile !== null ? (
+                <p className="mb-2 text-[11px] text-brand-500">
+                  常模百分位 P{percentile}（Crawford & Henry 2003, N=1771）
+                </p>
               ) : null}
               {d.band?.teacherNote ? (
                 <p className="text-xs leading-relaxed text-brand-700">
@@ -186,16 +198,22 @@ export default function TherapistResultCard({ scale, result, response }: Props) 
   );
 }
 
-function bandColor(level?: string) {
+function bandColor(level: string | undefined, highIsBetter: boolean) {
   switch (level) {
     case "normal":
-    case "low":
       return "bg-sage-100 text-sage-800";
+    case "low":
+      return highIsBetter
+        ? "bg-amber-100 text-amber-800"
+        : "bg-sage-100 text-sage-800";
+    case "high":
+      return highIsBetter
+        ? "bg-sage-100 text-sage-800"
+        : "bg-rose-100 text-rose-800";
     case "mild":
     case "moderate":
       return "bg-amber-100 text-amber-800";
     case "severe":
-    case "high":
     case "extremely_severe":
       return "bg-rose-100 text-rose-800";
     default:

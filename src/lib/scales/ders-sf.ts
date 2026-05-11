@@ -44,6 +44,8 @@ export const dersSf: Scale = {
   timeFrame: "通常情况下",
   estimatedMinutes: 4,
   isCore: false,
+  highIsBetter: false,
+  dimensionMaxScore: 15,
   triggers: ["emotion_dysregulation"],
   instructions:
     "请根据您通常情况下处理情绪的方式，判断每一项陈述对您的符合程度。这里的「心烦」指的是情绪受到较强冲击的状态。",

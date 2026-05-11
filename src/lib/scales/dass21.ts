@@ -30,6 +30,8 @@ export const dass21: Scale = {
   timeFrame: "过去一周",
   estimatedMinutes: 4,
   isCore: true,
+  highIsBetter: false,
+  dimensionMaxScore: 42,
   instructions:
     "请阅读以下各项，然后根据过去一周之内符合您的实际情况，选择相应的选项。您的回答没有对错之分，请不要在任何一项上花太多时间。",
   options: [

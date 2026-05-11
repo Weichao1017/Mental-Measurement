@@ -35,7 +35,10 @@ export const scsSf: Scale = {
   description: "测量自我友善、共同人性、正念三组对立面共六个维度",
   timeFrame: "通常情况下",
   estimatedMinutes: 3,
-  isCore: true,
+  isCore: false,
+  highIsBetter: true,
+  dimensionMaxScore: 5,
+  triggers: ["self_compassion"],
   instructions:
     "请根据您平常对待自己的方式，判断每一项陈述对您的符合程度。这里没有对错之分，请如实选择最贴近您日常状态的选项。",
   options: [

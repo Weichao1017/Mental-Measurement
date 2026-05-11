@@ -67,6 +67,14 @@ export interface Scale {
   estimatedMinutes: number;
   /** 是否核心量表（所有客户必填） */
   isCore: boolean;
+  /**
+   * 分数方向：true 表示高分=能力强/状态好（如 WHO-5、FFMQ、SCS、MAIA），
+   * false 表示高分=症状重/困难多（如 DASS-21、DERS-SF、ECR-12、PSQI）。
+   * 影响结果页色彩语义（高=绿 vs 高=红）。
+   */
+  highIsBetter: boolean;
+  /** 每个维度的满分（用于结果页显示 "14 / 42"），未设置则不显示分母 */
+  dimensionMaxScore?: number;
   /** 触发该量表的"主诉关键词"（仅 isCore=false 时有用） */
   triggers?: string[];
   /** 指导语 */
@@ -132,7 +140,10 @@ export type Concern =
   | "body_disconnect"
   | "emotion_dysregulation"
   | "sleep_problems"
-  | "relationship_issues";
+  | "relationship_issues"
+  | "wellbeing"
+  | "mindfulness"
+  | "self_compassion";
 
 /** 整个会话的状态 */
 export interface SessionState {

@@ -128,7 +128,7 @@ export default function ScaleRunner({ scale }: Props) {
             id={`q-${item.index}`}
             position={idx + 1}
             text={item.text}
-            options={scale.options}
+            options={item.options ?? scale.options}
             value={answers[item.index] ?? null}
             onChange={(v) => handleAnswer(item.index, v)}
             unverified={item.unverified}

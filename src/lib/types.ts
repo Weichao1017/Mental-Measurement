@@ -19,6 +19,11 @@ export interface ScaleItem {
   sourceRef?: string;
   /** 仍未从权威来源核对，前端可显示警告 */
   unverified?: boolean;
+  /**
+   * 该题专属选项；不传则使用 scale.options。
+   * 用于 PSQI 这种各题选项不同的量表。
+   */
+  options?: LikertOption[];
 }
 
 /** Likert 选项 */

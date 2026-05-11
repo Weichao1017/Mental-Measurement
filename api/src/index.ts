@@ -134,6 +134,11 @@ app.post("/api/analyze", async (c) => {
           { role: "user", content: userPrompt },
         ],
         stream: true,
+        // DeepSeek V4 系列默认开 thinking。心理评估解读不需要深度推理，
+        // 显式关掉以减少 5-30s 的 reasoning 等待，首 token 更快。
+        // OpenAI SDK 会透传未知字段给 API。
+        // @ts-expect-error: DeepSeek-specific parameter, not in OpenAI SDK types
+        thinking: { type: "disabled" },
       });
 
       for await (const chunk of completion) {

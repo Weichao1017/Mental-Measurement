@@ -140,8 +140,14 @@ app.post("/api/analyze", async (c) => {
         const delta = chunk.choices?.[0]?.delta as
           | { content?: string; reasoning_content?: string }
           | undefined;
-        // deepseek-reasoner 在 reasoning 阶段有 reasoning_content，跳过
-        // 只把最终 content 流给用户
+        // deepseek-reasoner: reasoning_content 阶段先到，content 后到
+        // 两段都流给前端，前端分别渲染（思考过程灰色折叠、最终正文主体显示）
+        if (delta?.reasoning_content) {
+          await stream.writeSSE({
+            event: "thinking",
+            data: JSON.stringify({ text: delta.reasoning_content }),
+          });
+        }
         if (delta?.content) {
           await stream.writeSSE({
             event: "chunk",

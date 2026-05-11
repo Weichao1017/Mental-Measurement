@@ -11,17 +11,21 @@ interface Props {
   results: Array<{ scale: Scale; result: ScaleResult }>;
 }
 
-type Status = "idle" | "loading" | "streaming" | "done" | "error";
+type Status = "idle" | "loading" | "thinking" | "streaming" | "done" | "error";
 
 export default function AIAnalysisCard({ session, results }: Props) {
   const [status, setStatus] = useState<Status>("idle");
   const [text, setText] = useState("");
+  const [thinking, setThinking] = useState("");
+  const [thinkingOpen, setThinkingOpen] = useState(false);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
   const [remaining, setRemaining] = useState<number | null>(null);
 
   const start = async () => {
     setStatus("loading");
     setText("");
+    setThinking("");
+    setThinkingOpen(true); // 思考过程默认展开（让用户看到进度）
     setErrorMsg(null);
 
     const payload = {
@@ -82,10 +86,20 @@ export default function AIAnalysisCard({ session, results }: Props) {
           buf = buf.slice(idx + 2);
           const evt = parseSSEFrame(frame);
           if (!evt) continue;
-          if (evt.event === "chunk") {
+          if (evt.event === "thinking") {
             try {
               const obj = JSON.parse(evt.data);
               if (typeof obj.text === "string") {
+                setStatus("thinking");
+                setThinking((prev) => prev + obj.text);
+              }
+            } catch {}
+          } else if (evt.event === "chunk") {
+            try {
+              const obj = JSON.parse(evt.data);
+              if (typeof obj.text === "string") {
+                setStatus("streaming");
+                setThinkingOpen(false); // 进入正文阶段，自动收起思考过程
                 setText((prev) => prev + obj.text);
               }
             } catch {}
@@ -144,6 +158,28 @@ export default function AIAnalysisCard({ session, results }: Props) {
 
       {status === "loading" ? (
         <p className="text-sm text-brand-600">正在请求 AI 分析…</p>
+      ) : null}
+
+      {/* deepseek-reasoner 的思考过程：默认展开，进入正文时自动收起，可手动展开看 */}
+      {thinking ? (
+        <details
+          open={thinkingOpen}
+          onToggle={(e) => setThinkingOpen((e.target as HTMLDetailsElement).open)}
+          className="mb-4 rounded-lg border border-brand-200 bg-cream/60 p-4"
+        >
+          <summary className="cursor-pointer select-none text-xs font-medium text-brand-600 hover:text-brand-800">
+            {status === "thinking" ? "AI 正在深度思考…" : "查看 AI 思考过程"}
+            <span className="ml-2 text-brand-400">
+              ({thinking.length} 字)
+            </span>
+          </summary>
+          <div className="mt-3 max-h-64 overflow-y-auto whitespace-pre-wrap text-xs leading-relaxed text-brand-500">
+            {thinking}
+            {status === "thinking" ? (
+              <span className="inline-block h-3 w-0.5 animate-pulse bg-brand-400 align-middle" />
+            ) : null}
+          </div>
+        </details>
       ) : null}
 
       {status === "streaming" || status === "done" ? (

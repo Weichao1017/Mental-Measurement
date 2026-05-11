@@ -11,6 +11,9 @@
  *   - 环境变量见 .env.example
  */
 
+import { config as loadEnv } from "dotenv";
+loadEnv(); // 显式加载 ./.env（不依赖 PM2 的 env_file 支持）
+
 import { serve } from "@hono/node-server";
 import { Hono } from "hono";
 import { cors } from "hono/cors";

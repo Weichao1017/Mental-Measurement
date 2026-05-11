@@ -126,7 +126,10 @@ app.post("/api/analyze", async (c) => {
 
   return streamSSE(c, async (stream) => {
     try {
-      const completion = await client.chat.completions.create({
+      // DeepSeek V4 系列默认开 thinking。心理评估解读不需要深度推理，
+      // 显式关掉以减少 5-30s 的 reasoning 等待，首 token 更快。
+      // thinking 是 DeepSeek-specific 字段，OpenAI SDK 不识别，先 cast 透传。
+      const completion = (await client.chat.completions.create({
         model: MODEL,
         max_tokens: MAX_TOKENS,
         messages: [
@@ -134,17 +137,16 @@ app.post("/api/analyze", async (c) => {
           { role: "user", content: userPrompt },
         ],
         stream: true,
-        // DeepSeek V4 系列默认开 thinking。心理评估解读不需要深度推理，
-        // 显式关掉以减少 5-30s 的 reasoning 等待，首 token 更快。
-        // OpenAI SDK 会透传未知字段给 API。
-        // @ts-expect-error: DeepSeek-specific parameter, not in OpenAI SDK types
-        thinking: { type: "disabled" },
-      });
+        ...({ thinking: { type: "disabled" } } as object),
+      })) as AsyncIterable<{
+        choices?: Array<{
+          delta?: { content?: string; reasoning_content?: string };
+          finish_reason?: string | null;
+        }>;
+      }>;
 
       for await (const chunk of completion) {
-        const delta = chunk.choices?.[0]?.delta as
-          | { content?: string; reasoning_content?: string }
-          | undefined;
+        const delta = chunk.choices?.[0]?.delta;
         // deepseek-reasoner: reasoning_content 阶段先到，content 后到
         // 两段都流给前端，前端分别渲染（思考过程灰色折叠、最终正文主体显示）
         if (delta?.reasoning_content) {

@@ -1,0 +1,31 @@
+{
+  "name": "mental-measurement",
+  "version": "0.1.0",
+  "private": true,
+  "description": "疗愈机构客户心理评估平台 · 集成 DASS-21、WHO-5、FFMQ-15、SCS-SF 等多个标准化量表",
+  "scripts": {
+    "dev": "next dev",
+    "build": "next build",
+    "start": "next start",
+    "lint": "next lint",
+    "typecheck": "tsc --noEmit",
+    "test:scoring": "tsx tests/scoring.test.ts"
+  },
+  "dependencies": {
+    "@types/qrcode": "^1.5.6",
+    "next": "^15.5.18",
+    "qrcode": "^1.5.4",
+    "react": "18.3.1",
+    "react-dom": "18.3.1"
+  },
+  "devDependencies": {
+    "@types/node": "20.14.10",
+    "@types/react": "18.3.3",
+    "@types/react-dom": "18.3.0",
+    "autoprefixer": "10.4.20",
+    "postcss": "8.4.49",
+    "tailwindcss": "3.4.14",
+    "tsx": "^4.21.0",
+    "typescript": "5.6.3"
+  }
+}

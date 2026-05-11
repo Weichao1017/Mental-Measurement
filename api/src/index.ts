@@ -20,7 +20,8 @@ import OpenAI from "openai";
 import { decodePayload, type SharePayload } from "./share.js";
 
 const PORT = Number(process.env.PORT ?? 3100);
-const MODEL = process.env.DEEPSEEK_MODEL ?? "deepseek-chat";
+const MODEL = process.env.DEEPSEEK_MODEL ?? "deepseek-reasoner";
+const MAX_TOKENS = Number(process.env.MAX_TOKENS ?? 8000);
 const BASE_URL = process.env.DEEPSEEK_BASE_URL ?? "https://api.deepseek.com/v1";
 const RATE_LIMIT = Number(process.env.RATE_LIMIT_PER_DAY ?? 10);
 const API_KEY = process.env.DEEPSEEK_API_KEY;
@@ -127,7 +128,7 @@ app.post("/api/analyze", async (c) => {
     try {
       const completion = await client.chat.completions.create({
         model: MODEL,
-        max_tokens: 2000,
+        max_tokens: MAX_TOKENS,
         messages: [
           { role: "system", content: systemPrompt },
           { role: "user", content: userPrompt },

@@ -15,6 +15,8 @@ import { wsas } from "./wsas";
 import { pswq } from "./pswq";
 import { rrs10 } from "./rrs10";
 import { asrs } from "./asrs";
+import { aci } from "./aci";
+import { wurs25 } from "./wurs25";
 import type { Concern, Scale } from "../types";
 
 export const SCALES: Record<string, Scale> = {
@@ -33,6 +35,8 @@ export const SCALES: Record<string, Scale> = {
   pswq,
   rrs10,
   asrs,
+  aci,
+  wurs25,
 };
 
 /** 默认核心套装：所有人必做的最少集合 */

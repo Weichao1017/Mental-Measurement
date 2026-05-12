@@ -1,5 +1,8 @@
+"use client";
+
 import type { ScaleResult, Scale } from "@/lib/types";
 import { getPercentile } from "@/lib/norms";
+import { useT, useLang, pick, type Lang } from "@/lib/lang";
 
 interface Props {
   scale: Scale;
@@ -7,27 +10,45 @@ interface Props {
 }
 
 export default function ResultCard({ scale, result }: Props) {
+  const t = useT();
+  const { lang } = useLang();
   return (
     <article className="rounded-2xl border border-brand-200 bg-white p-6 shadow-sm sm:p-8">
       <header className="mb-5 flex items-baseline justify-between gap-4">
-        <h3 className="font-serif text-xl text-ink sm:text-2xl">{scale.name}</h3>
+        <h3 className="font-serif text-xl text-ink sm:text-2xl">
+          {pick(scale.name, scale.nameEn, lang)}
+        </h3>
         {!scale.fullyVerified ? (
           <span className="rounded-full bg-amber-100 px-2 py-0.5 text-xs text-amber-800">
-            题库待核对
+            {t("rc_band_pending")}
           </span>
         ) : null}
       </header>
 
-      <p className="mb-5 text-sm text-brand-600">{scale.description}</p>
+      <p className="mb-5 text-sm text-brand-600">
+        {pick(scale.description, scale.descriptionEn, lang)}
+      </p>
 
       <div className="space-y-4">
         {result.dimensions.map((d) => {
+          // 取本地化的 name / label / clientNote
+          const dimInfo = scale.dimensions.find((x) => x.code === d.code);
+          const dName = pick(d.name, dimInfo?.nameEn, lang);
+          const bandObj = scale.severityBands[d.code]?.find(
+            (b) => b.label === d.band?.label
+          );
+          const bandLabel = d.band
+            ? pick(d.band.label, bandObj?.labelEn, lang)
+            : null;
+          const clientNote = d.band?.clientNote
+            ? pick(d.band.clientNote, bandObj?.clientNoteEn, lang)
+            : null;
           const bandClass = bandColor(d.band?.level, scale.highIsBetter);
           const percentile = getPercentile(scale.id, d.code, d.finalScore);
           return (
             <div key={d.code} className="border-t border-brand-100 pt-4 first:border-t-0 first:pt-0">
               <div className="flex items-baseline justify-between gap-3">
-                <h4 className="text-base font-medium text-ink">{d.name}</h4>
+                <h4 className="text-base font-medium text-ink">{dName}</h4>
                 <div className="text-right">
                   <div className="font-mono text-2xl tabular-nums text-ink">
                     {formatScore(d.finalScore, scale.scoringMethod)}
@@ -37,22 +58,24 @@ export default function ResultCard({ scale, result }: Props) {
                       </span>
                     ) : null}
                   </div>
-                  {d.band ? (
+                  {bandLabel ? (
                     <div className={`mt-0.5 inline-block rounded-full px-2 py-0.5 text-xs ${bandClass}`}>
-                      {d.band.label}
+                      {bandLabel}
                     </div>
                   ) : null}
                 </div>
               </div>
               {percentile !== null ? (
                 <p className="mt-2 text-xs text-brand-500">
-                  {percentileLabel(percentile, scale.highIsBetter)}
-                  <span className="ml-1 text-brand-400">（澳大利亚成人非临床常模 N=1771）</span>
+                  {percentileLabel(percentile, scale.highIsBetter, lang)}
+                  <span className="ml-1 text-brand-400">
+                    {t("rc_norm_suffix")}
+                  </span>
                 </p>
               ) : null}
-              {d.band?.clientNote ? (
+              {clientNote ? (
                 <p className="mt-2 text-sm leading-relaxed text-brand-700">
-                  {d.band.clientNote}
+                  {clientNote}
                 </p>
               ) : null}
             </div>
@@ -60,22 +83,8 @@ export default function ResultCard({ scale, result }: Props) {
         })}
       </div>
 
-      {result.warnings.length > 0 ? (
-        <div className="mt-5 rounded-lg border border-rose-200 bg-rose-50 p-4 text-sm text-rose-900">
-          <div className="mb-1 font-medium">温和提醒</div>
-          <p className="leading-relaxed">
-            您在涉及自我价值或生命意义的问题上选择了较高的程度。这些感受是真实的，请记得您不必独自承担：
-          </p>
-          <ul className="mt-2 list-inside list-disc space-y-1">
-            <li>北京心理危机研究与干预中心：010-82951332（24 小时）</li>
-            <li>全国希望热线：400-161-9995</li>
-            <li>华中师范大学心理援助热线：4001-888-976（24 小时）</li>
-          </ul>
-        </div>
-      ) : null}
-
       <div className="mt-6 border-t border-brand-100 pt-4 text-xs text-brand-400">
-        引用：{scale.citation}
+        {t("rc_citation")}{scale.citation}
       </div>
     </article>
   );
@@ -116,7 +125,23 @@ function formatScore(score: number, method: Scale["scoringMethod"]) {
   return Math.round(score);
 }
 
-function percentileLabel(p: number, highIsBetter: boolean): string {
+function percentileLabel(
+  p: number,
+  highIsBetter: boolean,
+  lang: Lang
+): string {
+  if (lang === "en") {
+    if (highIsBetter) {
+      if (p >= 90) return `Your score is higher than about ${p}% of adults — notably strong`;
+      if (p >= 60) return `Your score is higher than about ${p}% of adults — slightly above average`;
+      if (p >= 40) return `Your score is around the adult average`;
+      return `Your score is lower than about ${100 - p}% of adults — room to grow in this area`;
+    }
+    if (p >= 90) return `Your score is higher than about ${p}% of adults — significant distress in this dimension`;
+    if (p >= 70) return `Your score is higher than about ${p}% of adults — slightly above average`;
+    if (p >= 40) return `Your score is around the adult average`;
+    return `Your score is lower than about ${100 - p}% of adults — relatively stable in this dimension`;
+  }
   if (highIsBetter) {
     if (p >= 90) return `你的得分高于约 ${p}% 的成人——较为出色`;
     if (p >= 60) return `你的得分高于约 ${p}% 的成人——略高于平均`;

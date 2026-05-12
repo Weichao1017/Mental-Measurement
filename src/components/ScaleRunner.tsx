@@ -4,6 +4,7 @@ import { useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import type { Scale, ScaleResponse } from "@/lib/types";
 import { loadSession, saveResponse, advanceToNext } from "@/lib/store";
+import { useT, useLang, pick } from "@/lib/lang";
 import QuestionCard from "./QuestionCard";
 
 interface Props {
@@ -12,6 +13,9 @@ interface Props {
 
 export default function ScaleRunner({ scale }: Props) {
   const router = useRouter();
+  const t = useT();
+  const { lang } = useLang();
+  const scaleName = pick(scale.name, scale.nameEn, lang);
   const [answers, setAnswers] = useState<Record<number, number>>({});
   const [mounted, setMounted] = useState(false);
 
@@ -99,7 +103,7 @@ export default function ScaleRunner({ scale }: Props) {
       <div className="sticky top-0 z-20 -mx-5 mb-6 border-b border-brand-100 bg-cream/90 px-5 py-3 backdrop-blur sm:-mx-6 sm:px-6">
         <div className="mx-auto max-w-2xl">
           <div className="mb-1.5 flex items-baseline justify-between text-xs">
-            <span className="font-medium text-brand-700">{scale.name}</span>
+            <span className="font-medium text-brand-700">{scaleName}</span>
             <span className="font-mono tabular-nums text-brand-500">
               {answered} / {total}
             </span>
@@ -115,46 +119,65 @@ export default function ScaleRunner({ scale }: Props) {
 
       {/* 量表指导语 */}
       <div className="mb-6 rounded-xl bg-brand-50 p-5 text-sm leading-relaxed text-brand-700">
-        <div className="mb-1 font-medium text-ink">{scale.name}</div>
-        <p>{scale.instructions}</p>
-        <p className="mt-2 text-xs text-brand-500">时间窗口：{scale.timeFrame}</p>
+        <div className="mb-1 font-medium text-ink">{scaleName}</div>
+        <p>{pick(scale.instructions, scale.instructionsEn, lang)}</p>
+        <p className="mt-2 text-xs text-brand-500">
+          {t("runner_timeframe_prefix")}
+          {pick(scale.timeFrame, scale.timeFrameEn, lang)}
+        </p>
       </div>
 
       {/* 所有题目按顺序渲染 */}
       <div className="space-y-4">
-        {items.map((item, idx) => (
-          <QuestionCard
-            key={item.index}
-            id={`q-${item.index}`}
-            position={idx + 1}
-            text={item.text}
-            options={item.options ?? scale.options}
-            value={answers[item.index] ?? null}
-            onChange={(v) => handleAnswer(item.index, v)}
-            unverified={item.unverified}
-            flagWarning={item.flags?.includes("suicidal_ideation")}
-            flagThreshold={item.flagThreshold}
-          />
-        ))}
+        {items.map((item, idx) => {
+          const itemText = pick(item.text, item.textEn, lang);
+          const itemOptions = (item.options ?? scale.options).map((opt) => ({
+            ...opt,
+            label: pick(opt.label, opt.labelEn, lang),
+            short: opt.short ? pick(opt.short, opt.shortEn, lang) : undefined,
+          }));
+          return (
+            <QuestionCard
+              key={item.index}
+              id={`q-${item.index}`}
+              position={idx + 1}
+              text={itemText}
+              options={itemOptions}
+              value={answers[item.index] ?? null}
+              onChange={(v) => handleAnswer(item.index, v)}
+              unverified={item.unverified}
+              flagWarning={item.flags?.includes("suicidal_ideation")}
+              flagThreshold={item.flagThreshold}
+            />
+          );
+        })}
       </div>
 
       {/* 底部提交区 */}
       <div className="mt-10 rounded-2xl border border-brand-200 bg-white p-6 text-center">
         {allDone ? (
           <>
-            <p className="mb-4 text-brand-700">已完成本量表全部题目。</p>
+            <p className="mb-4 text-brand-700">{t("runner_completed_all")}</p>
             <button type="button" className="btn-primary" onClick={handleSubmit}>
-              提交并继续 →
+              {t("runner_submit_continue")}
             </button>
           </>
         ) : (
           <>
             <p className="mb-1 text-brand-700">
-              还有 <span className="font-mono font-medium">{total - answered}</span> 道题没答
+              {t("runner_remaining_prefix")}
+              <span className="font-mono font-medium">{total - answered}</span>
+              {t("runner_remaining_mid")}
             </p>
-            <p className="mb-4 text-xs text-brand-500">所有题目答完才能进入下一个量表</p>
-            <button type="button" className="btn-ghost" onClick={scrollToFirstUnanswered}>
-              跳到下一道未答的题
+            <p className="mb-4 text-xs text-brand-500">
+              {t("runner_remaining_note")}
+            </p>
+            <button
+              type="button"
+              className="btn-ghost"
+              onClick={scrollToFirstUnanswered}
+            >
+              {t("runner_jump_unanswered")}
             </button>
           </>
         )}

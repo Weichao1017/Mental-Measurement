@@ -2,6 +2,7 @@
 
 import { useEffect, useMemo, useState } from "react";
 import type { LikertOption } from "@/lib/types";
+import { useT } from "@/lib/lang";
 
 interface Props {
   /** 题目编号 */
@@ -54,6 +55,7 @@ function Shell({
   flagThreshold,
   children,
 }: Props & { children: React.ReactNode }) {
+  const t = useT();
   const answered = value !== null;
   return (
     <section
@@ -70,9 +72,9 @@ function Shell({
             answered ? "bg-sage-100 text-sage-800" : "bg-brand-100 text-brand-700",
           ].join(" ")}
         >
-          第 {position} 题
+          {t("q_position_prefix")}{position}{t("q_position_suffix")}
         </span>
-        <span className="text-xs text-brand-400">维度已隐藏</span>
+        <span className="text-xs text-brand-400">{t("q_dim_hidden")}</span>
       </header>
 
       {unverified ? (
@@ -87,11 +89,8 @@ function Shell({
 
       {flagWarning && value !== null && value >= (flagThreshold ?? 2) ? (
         <div className="mt-4 rounded-xl border border-rose-200 bg-rose-50 p-4 text-sm leading-relaxed text-rose-900">
-          <div className="mb-1 font-medium">我们注意到您选择的程度较高</div>
-          <p>
-            如果您正在经历持续的低落或对生活感到无望，这些感受是值得被认真对待的。
-            您可以在结果页找到一些可以拨打的支持热线，也欢迎您向身边信任的人或专业人员寻求支持。
-          </p>
+          <div className="mb-1 font-medium">{t("q_warning_title")}</div>
+          <p>{t("q_warning_body")}</p>
         </div>
       ) : null}
     </section>
@@ -139,6 +138,7 @@ function ButtonsInput({ options, value, onChange }: Props) {
 }
 
 function SliderInput({ options, value, onChange }: Props) {
+  const t = useT();
   // 按分数升序排列：左 = 低分，右 = 高分
   const sorted = useMemo(
     () => [...options].sort((a, b) => a.value - b.value),
@@ -191,7 +191,7 @@ function SliderInput({ options, value, onChange }: Props) {
             {currentOption.label}
           </span>
         ) : (
-          <span className="text-sm text-brand-400">拖动滑块选择程度</span>
+          <span className="text-sm text-brand-400">{t("q_slider_hint")}</span>
         )}
       </div>
 

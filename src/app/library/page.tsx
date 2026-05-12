@@ -6,6 +6,7 @@ import Link from "next/link";
 import Container from "@/components/Container";
 import { SCALES } from "@/lib/scales";
 import { newSession } from "@/lib/store";
+import { useT, useLang, pick, type UIKey } from "@/lib/lang";
 import type { Scale } from "@/lib/types";
 
 /**
@@ -15,23 +16,27 @@ import type { Scale } from "@/lib/types";
  * - 单选也行：选 1 个 + 开始评估 = 单做这一个
  */
 
-const CATEGORY_ORDER: Array<{ key: string; title: string; subtitle: string }> = [
+const CATEGORY_ORDER: Array<{
+  key: string;
+  titleKey: UIKey;
+  subKey: UIKey;
+}> = [
   {
     key: "anxiety_clinical",
-    title: "焦虑情绪测评",
-    subtitle:
-      "焦虑/抑郁/双相的临床金标准筛查 + 慢性担忧、反刍、成人 ADHD 鉴别",
+    titleKey: "library_cat_anxiety",
+    subKey: "library_cat_anxiety_sub",
   },
   {
     key: "general",
-    title: "综合心理评估",
-    subtitle:
-      "情绪症状、幸福感、正念能力、自我关怀、身体觉察、情绪调节、睡眠、依恋等",
+    titleKey: "library_cat_general",
+    subKey: "library_cat_general_sub",
   },
 ];
 
 export default function LibraryPage() {
   const router = useRouter();
+  const t = useT();
+  const { lang } = useLang();
   const [selected, setSelected] = useState<Set<string>>(new Set());
 
   const toggle = (id: string, disabled: boolean) => {
@@ -95,10 +100,14 @@ export default function LibraryPage() {
         <div className="sticky top-0 z-30 border-b border-sage-300 bg-sage-50/95 backdrop-blur">
           <div className="mx-auto flex max-w-4xl flex-wrap items-center gap-3 px-5 py-3 sm:px-6">
             <div className="flex-1 text-sm text-sage-900">
-              已选 <span className="font-mono font-semibold">{selected.size}</span> 个量表
+              {t("library_selected_count")}{" "}
+              <span className="font-mono font-semibold">{selected.size}</span>{" "}
+              {t("library_scales_unit")}
               <span className="text-sage-700">
                 {" "}
-                · {totalItems} 题 · 预计 ~{totalMinutes} 分钟
+                · {totalItems} {t("library_items_unit")} ·{" "}
+                {t("library_minutes_prefix")}
+                {totalMinutes} {t("library_minutes_unit")}
               </span>
             </div>
             <button
@@ -106,14 +115,14 @@ export default function LibraryPage() {
               onClick={clear}
               className="rounded-full border border-brand-300 bg-white px-4 py-1.5 text-sm text-brand-700 hover:bg-brand-50"
             >
-              清空
+              {t("library_clear")}
             </button>
             <button
               type="button"
               onClick={startBatch}
               className="rounded-full bg-sage-600 px-5 py-1.5 text-sm font-medium text-white shadow-sm hover:bg-sage-700"
             >
-              开始所选量表 →
+              {t("library_start_selected")}
             </button>
           </div>
         </div>
@@ -122,19 +131,17 @@ export default function LibraryPage() {
       <Container size="lg">
         <div className="animate-fade-in">
           <p className="mb-3 text-sm uppercase tracking-[0.2em] text-brand-400">
-            Library
+            {t("library_eyebrow")}
           </p>
           <h1 className="mb-4 font-serif text-3xl leading-tight text-ink sm:text-4xl">
-            测评题库
+            {t("library_title")}
           </h1>
           <p className="mb-10 max-w-prose leading-relaxed text-brand-700">
-            点击量表卡片即可勾选，可以同时选几个一起做——完成后所有结果会汇总在一页，
-            AI 深度分析也会综合所有量表给出整体画像。
-            如果你想走完整推荐流程，回到
+            {t("library_intro")} {t("library_back_home_hint")}{" "}
             <Link href="/" className="text-sage-700 underline">
-              首页
-            </Link>
-            点「开始评估」。
+              {t("library_back_home")}
+            </Link>{" "}
+            {t("library_back_home_action")}
           </p>
 
           {CATEGORY_ORDER.map((cat) => {
@@ -143,8 +150,10 @@ export default function LibraryPage() {
             return (
               <section key={cat.key} className="mb-12">
                 <header className="mb-5 border-b border-brand-200 pb-3">
-                  <h2 className="font-serif text-2xl text-ink">{cat.title}</h2>
-                  <p className="mt-1 text-sm text-brand-500">{cat.subtitle}</p>
+                  <h2 className="font-serif text-2xl text-ink">
+                    {t(cat.titleKey)}
+                  </h2>
+                  <p className="mt-1 text-sm text-brand-500">{t(cat.subKey)}</p>
                 </header>
                 <div className="grid gap-4 sm:grid-cols-2">
                   {scales.map((s) => (
@@ -153,6 +162,8 @@ export default function LibraryPage() {
                       scale={s}
                       isSelected={selected.has(s.id)}
                       onToggle={toggle}
+                      lang={lang}
+                      t={t}
                     />
                   ))}
                 </div>
@@ -161,7 +172,7 @@ export default function LibraryPage() {
           })}
 
           <footer className="mt-12 border-t border-brand-200 pt-6 text-xs leading-relaxed text-brand-400">
-            所有量表均来自国际公开发表、被研究反复验证的心理评估工具。每个量表卡片的"题库待核对"标签表示中文题目内容由 AI 翻译，尚未与权威中文修订版逐字对齐，仅供研究和自我了解参考。
+            {t("library_footer")}
           </footer>
         </div>
       </Container>
@@ -173,10 +184,14 @@ function ScaleCard({
   scale,
   isSelected,
   onToggle,
+  lang,
+  t,
 }: {
   scale: Scale;
   isSelected: boolean;
   onToggle: (id: string, disabled: boolean) => void;
+  lang: "zh" | "en";
+  t: (key: UIKey) => string;
 }) {
   const stub = scale.items.length === 0;
   const disabled = stub;
@@ -231,46 +246,54 @@ function ScaleCard({
         </span>
 
         <div className="flex flex-1 flex-wrap items-baseline gap-2">
-          <h3 className="font-serif text-lg text-ink">{scale.name}</h3>
+          <h3 className="font-serif text-lg text-ink">
+            {pick(scale.name, scale.nameEn, lang)}
+          </h3>
           {scale.isCore ? (
             <span className="rounded-full bg-sage-100 px-2 py-0.5 text-[11px] text-sage-800">
-              核心
+              {t("library_badge_core")}
             </span>
           ) : null}
           {!scale.fullyVerified && !stub ? (
             <span className="rounded-full bg-amber-100 px-2 py-0.5 text-[11px] text-amber-800">
-              题库待核对
+              {t("library_badge_unverified")}
             </span>
           ) : null}
           {stub ? (
             <span className="rounded-full bg-brand-100 px-2 py-0.5 text-[11px] text-brand-600">
-              开发中
+              {t("library_badge_stub")}
             </span>
           ) : null}
         </div>
       </header>
 
       <p className="mb-3 flex-1 text-sm leading-relaxed text-brand-700">
-        {scale.description}
+        {pick(scale.description, scale.descriptionEn, lang)}
       </p>
 
       <dl className="grid grid-cols-2 gap-x-3 gap-y-1 text-xs text-brand-500">
         <div>
-          <dt className="inline">时间窗口：</dt>
-          <dd className="inline text-brand-700">{scale.timeFrame}</dd>
+          <dt className="inline">{t("library_card_timeframe")}</dt>
+          <dd className="inline text-brand-700">
+            {pick(scale.timeFrame, scale.timeFrameEn, lang)}
+          </dd>
         </div>
         <div>
-          <dt className="inline">题数：</dt>
+          <dt className="inline">{t("library_card_items")}</dt>
           <dd className="inline text-brand-700">{scale.items.length || "—"}</dd>
         </div>
         <div>
-          <dt className="inline">预计：</dt>
-          <dd className="inline text-brand-700">~{scale.estimatedMinutes} 分</dd>
+          <dt className="inline">{t("library_card_minutes")}</dt>
+          <dd className="inline text-brand-700">
+            ~{scale.estimatedMinutes} {t("library_minutes_unit")}
+          </dd>
         </div>
         <div>
-          <dt className="inline">方向：</dt>
+          <dt className="inline">{t("library_card_direction")}</dt>
           <dd className="inline text-brand-700">
-            {scale.highIsBetter ? "高=能力强" : "高=症状/困扰"}
+            {scale.highIsBetter
+              ? t("library_dir_high_good")
+              : t("library_dir_high_bad")}
           </dd>
         </div>
       </dl>

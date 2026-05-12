@@ -1,14 +1,15 @@
 import type { Metadata, Viewport } from "next";
 import type { ReactNode } from "react";
+import { LangProvider } from "@/lib/lang";
+import LangSwitcher from "@/components/LangSwitcher";
 import "./globals.css";
 
 export const metadata: Metadata = {
-  title: "心理状态评估 · 疗愈课程入组测评",
+  title: "心理状态评估 · Mental Measurement",
   description:
-    "结合 DASS-21、WHO-5、FFMQ-15、SCS-SF 等标准化量表的多维心理状态评估，为正念与疗愈课程提供基线参考。",
+    "Multi-dimensional psychological assessment integrating DASS-21, WHO-5, GAD-7, PHQ-9, MDQ, ASRS and 9 more standardized scales. Bilingual (中文 / English).",
 };
 
-// Next.js 15 起 viewport 改为独立 export
 export const viewport: Viewport = {
   width: "device-width",
   initialScale: 1,
@@ -17,7 +18,12 @@ export const viewport: Viewport = {
 export default function RootLayout({ children }: { children: ReactNode }) {
   return (
     <html lang="zh-Hans">
-      <body>{children}</body>
+      <body>
+        <LangProvider>
+          <LangSwitcher />
+          {children}
+        </LangProvider>
+      </body>
     </html>
   );
 }

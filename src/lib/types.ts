@@ -6,6 +6,8 @@ export interface ScaleItem {
   index: number;
   /** 题目正文（默认简体中文） */
   text: string;
+  /** 英文原版题目（量表原版语言；若量表本身就是英文起源则这里是 ground truth） */
+  textEn?: string;
   /** 所属维度（缩写代码，如 "D" / "A" / "S"） */
   dimension: string;
   /** 是否反向计分 */
@@ -36,15 +38,19 @@ export interface ScaleItem {
 export interface LikertOption {
   value: number;
   label: string;
+  labelEn?: string;
   /** 短标签，结果页 / 进度回顾展示用 */
   short?: string;
+  shortEn?: string;
 }
 
 /** 量表维度（用于结果分维度展示） */
 export interface ScaleDimension {
   code: string;
   name: string;
+  nameEn?: string;
   description?: string;
+  descriptionEn?: string;
   /** 该维度包含的题号（DASS-21 index） */
   itemIndices: number[];
 }
@@ -53,14 +59,17 @@ export interface ScaleDimension {
 export interface SeverityBand {
   level: "normal" | "mild" | "moderate" | "severe" | "extremely_severe" | "low" | "high";
   label: string;
+  labelEn?: string;
   /** 最小值（含） */
   min: number;
   /** 最大值（含），null 表示无上限 */
   max: number | null;
   /** 给客户看的简短解读 */
   clientNote?: string;
+  clientNoteEn?: string;
   /** 给老师看的简短建议 */
   teacherNote?: string;
+  teacherNoteEn?: string;
 }
 
 /** 量表元数据 */
@@ -70,10 +79,13 @@ export interface Scale {
   slug: string;
   /** 显示名（中文） */
   name: string;
+  nameEn?: string;
   /** 短描述 */
   description: string;
+  descriptionEn?: string;
   /** 时间窗口（"过去一周" / "过去两周" 等） */
   timeFrame: string;
+  timeFrameEn?: string;
   /** 估算填写时长（分钟） */
   estimatedMinutes: number;
   /** 是否核心量表（所有客户必填） */
@@ -97,6 +109,7 @@ export interface Scale {
   triggers?: string[];
   /** 指导语 */
   instructions: string;
+  instructionsEn?: string;
   /** Likert 选项 */
   options: LikertOption[];
   /** 所有题目 */

@@ -1,17 +1,25 @@
 "use client";
 
 import type { ClinicalFlag } from "@/lib/clinical-flag";
-import { LEVEL_LABELS } from "@/lib/clinical-flag";
+import { useT, type UIKey } from "@/lib/lang";
 
 interface Props {
   flag: ClinicalFlag;
 }
+
+const LEVEL_TO_KEY: Record<ClinicalFlag["level"], UIKey> = {
+  urgent: "cf_level_urgent",
+  strong: "cf_level_strong",
+  consult: "cf_level_consult",
+  self_help: "cf_level_self_help",
+};
 
 /**
  * 临床综合建议卡片，显示在结果页顶部（在 AI 分析之前）。
  * 把分散在各量表的临床信号合并成一个明确的"是否建议就医 / 用药"等级。
  */
 export default function ClinicalFlagCard({ flag }: Props) {
+  const t = useT();
   const styles = STYLES[flag.color];
 
   return (
@@ -21,16 +29,17 @@ export default function ClinicalFlagCard({ flag }: Props) {
       <header className="mb-4 flex flex-wrap items-baseline justify-between gap-3">
         <div>
           <p className={`mb-1 text-xs uppercase tracking-[0.2em] ${styles.label}`}>
-            综合建议
+            {t("cf_eyebrow")}
           </p>
           <h2 className={`font-serif text-2xl ${styles.heading}`}>
-            {LEVEL_LABELS[flag.level]}
+            {t(LEVEL_TO_KEY[flag.level])}
           </h2>
         </div>
         <span
           className={`rounded-full px-3 py-1 text-xs font-medium ${styles.badge}`}
         >
-          {flag.signals.length} 个相关信号
+          {flag.signals.length}
+          {t("cf_signals_count_suffix")}
         </span>
       </header>
 
@@ -41,7 +50,7 @@ export default function ClinicalFlagCard({ flag }: Props) {
       {flag.signals.length > 0 ? (
         <div className="mb-5">
           <h3 className={`mb-2 text-xs font-medium uppercase tracking-wider ${styles.label}`}>
-            触发的信号
+            {t("cf_signals_header")}
           </h3>
           <ul className="space-y-1.5 text-sm">
             {flag.signals.map((s, i) => (
@@ -55,7 +64,7 @@ export default function ClinicalFlagCard({ flag }: Props) {
                   <span className={styles.body}> · {s.description}</span>
                   {s.warning ? (
                     <span className="ml-1 rounded-full bg-rose-200 px-1.5 py-0.5 text-[10px] font-medium text-rose-900">
-                      警示
+                      {t("cf_warn_badge")}
                     </span>
                   ) : null}
                 </span>
@@ -67,7 +76,7 @@ export default function ClinicalFlagCard({ flag }: Props) {
 
       <div>
         <h3 className={`mb-2 text-xs font-medium uppercase tracking-wider ${styles.label}`}>
-          建议行动
+          {t("cf_rec_header")}
         </h3>
         <ol className="space-y-2 text-sm leading-relaxed">
           {flag.recommendations.map((r, i) => (
@@ -84,8 +93,7 @@ export default function ClinicalFlagCard({ flag }: Props) {
       </div>
 
       <p className={`mt-5 text-[11px] leading-relaxed ${styles.footer}`}>
-        本评估仅供自我了解和与专业人员沟通的参考，不构成临床诊断。
-        如果出现持续的低落、强烈的无望感或自伤想法，请尽快联系专业精神科 / 心理科。
+        {t("cf_footer")}
       </p>
     </section>
   );

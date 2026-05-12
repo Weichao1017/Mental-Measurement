@@ -69,6 +69,8 @@ app.get("/api/health", (c) =>
 );
 
 interface AnalyzeBody {
+  /** 输出语言：zh（默认）或 en */
+  lang?: "zh" | "en";
   d?: string;
   results: Array<{
     scaleId: string;
@@ -132,8 +134,9 @@ app.post("/api/analyze", async (c) => {
   let payload: SharePayload | null = null;
   if (body.d) payload = decodePayload(body.d);
 
-  const systemPrompt = buildSystemPrompt();
-  const userPrompt = buildUserPrompt(body, payload);
+  const lang = body.lang === "en" ? "en" : "zh";
+  const systemPrompt = buildSystemPrompt(lang);
+  const userPrompt = buildUserPrompt(body, payload, lang);
 
   return streamSSE(c, async (stream) => {
     try {
@@ -195,8 +198,12 @@ app.post("/api/analyze", async (c) => {
   });
 });
 
-function buildSystemPrompt(): string {
-  return `你是一位有经验、温暖、专业的心理评估解读师，正在帮一位普通用户理解 ta 刚完成的多维度心理评估结果。
+function buildSystemPrompt(lang: "zh" | "en"): string {
+  if (lang === "en") return SYSTEM_PROMPT_EN;
+  return SYSTEM_PROMPT_ZH;
+}
+
+const SYSTEM_PROMPT_ZH = `你是一位有经验、温暖、专业的心理评估解读师，正在帮一位普通用户理解 ta 刚完成的多维度心理评估结果。
 
 输出结构（用 markdown，## 二级标题分节）：
 
@@ -243,43 +250,94 @@ function buildSystemPrompt(): string {
 - 引用具体数字（"DASS-21 焦虑维度 14/42，第 88 百分位"）以增加可信度
 - 部分量表未完成时，明确说「这一维度本次未评估」而非强行解读
 - 不要输出 markdown 代码块或额外解释，直接从「## 整体状态」开始`;
+
+const SYSTEM_PROMPT_EN = `You are an experienced, warm, professional psychological assessment interpreter, helping an everyday user understand the multi-dimensional psychological assessment they just completed.
+
+Output structure (use markdown with ## section headers):
+
+## Overall State
+2-3 sentences summarizing the user's current overall psychological state. Avoid diagnostic language.
+
+## Notable Strengths
+List 2-3 resources, capacities, or positive signs reflected in the assessment. Reference specific dimension names and scores.
+
+## Areas Worth Attention
+List 2-3 areas to monitor or where professional support might help. Warm tone, do not create anxiety.
+
+## Clinical Recommendation Level
+**This section MUST explicitly give one of four levels: "self-help / counseling / professional assessment / urgent care"**, with the reason. The user data includes a clinicalFlag field with a rule-based level (self_help / consult / strong / urgent). Reference this level and translate it into concrete advice:
+- urgent → Contact psychiatry within 24-48 hours; provide crisis hotlines
+- strong → Book psychiatrist or clinical psychologist within a week; if considering SSRI, MUST check MDQ result first to rule out bipolar
+- consult → Find a counselor for 6-12 supportive sessions; re-test in 1-2 months
+- self_help → Self-help + courses sufficient; mindfulness / self-compassion practice to maintain
+
+Specific clinical notes:
+- If MDQ Q1-13 ≥ 7 AND Q14 = yes AND Q15 ≥ 2: bipolar-positive; psychiatry consultation REQUIRED before SSRI
+- If ASRS Part A ≥ 14: ADHD-positive; recommend formal ADHD evaluation (SSRIs don't help ADHD)
+- If GAD-7 ≥ 15 or PHQ-9 ≥ 15: symptoms severely affecting life; prioritize professional intervention
+- If WSAS ≥ 20: functioning has been substantially disrupted, requires attention regardless of symptom scales
+
+## Direction for Therapist / Counselor
+A paragraph of 3-5 sentences. Specific actionable session focus, recommended modalities (ACT, CFT, somatic, attachment-based, MBCT, CBT, RFCBT, etc.), and additional assessments needed.
+
+## A Word for You
+A paragraph of 2-3 sentences — warm, human, like a friend speaking. No condescension. Don't repeat what's been said above.
+
+## Important Warning (only output this section if warnings field is non-empty OR clinicalFlag.level = urgent)
+If suicidal-ideation warning items triggered or level is urgent, explicitly list crisis resources:
+- International: findahelpline.com (free, 100+ countries, anonymous)
+- USA: 988 Suicide & Crisis Lifeline (24/7)
+- UK: Samaritans 116 123 (24/7)
+- China: Beijing Psychological Crisis Intervention 010-82951332 (24h)
+Explicitly encourage the user to seek professional support.
+
+Hard constraints:
+- Total length under 1000 words (English)
+- Avoid clinical diagnostic terms (don't say "you have depression"); say "scores suggest pronounced anxiety tendency" etc.
+- Objective yet warm — not a cold report tone
+- Reference specific numbers ("DASS-21 Anxiety 14/42, 88th percentile") for credibility
+- If a scale is incomplete, say "this dimension wasn't assessed in this round" rather than forcing interpretation
+- Do not output markdown code blocks or extra explanation — start directly from "## Overall State"`;
 }
 
 function buildUserPrompt(
   body: AnalyzeBody,
-  payload: SharePayload | null
+  payload: SharePayload | null,
+  lang: "zh" | "en"
 ): string {
+  const T = lang === "en" ? PROMPT_T_EN : PROMPT_T_ZH;
   const lines: string[] = [];
-  lines.push(`用户刚完成了一次心理评估。以下是结构化数据：\n`);
+  lines.push(T.intro);
 
-  if (body.startedAt) lines.push(`评估时间：${body.startedAt}`);
+  if (body.startedAt) lines.push(`${T.time}${body.startedAt}`);
   if (body.concerns && body.concerns.length > 0) {
-    lines.push(`主诉勾选：${body.concerns.join(", ")}`);
+    lines.push(`${T.concerns}${body.concerns.join(", ")}`);
   }
 
-  // 前端已规则化算出的综合临床判断
   if (body.clinicalFlag) {
-    lines.push(`\n## 综合临床判断（已由规则算出）`);
-    lines.push(`- 等级：${body.clinicalFlag.level}`);
-    lines.push(`- 摘要：${body.clinicalFlag.summary}`);
+    lines.push(`\n${T.clinical_header}`);
+    lines.push(`- ${T.level}${body.clinicalFlag.level}`);
+    lines.push(`- ${T.summary}${body.clinicalFlag.summary}`);
     if (body.clinicalFlag.signals.length > 0) {
-      lines.push(`- 触发信号：`);
+      lines.push(`- ${T.signals}`);
       for (const s of body.clinicalFlag.signals) {
         const w = s.warning ? " ⚠️" : "";
         lines.push(`  · [${s.level}] ${s.scaleName}: ${s.description}${w}`);
       }
     }
     lines.push("");
-    lines.push(`请在"临床建议层级"段引用这个等级并具体化建议。`);
+    lines.push(T.clinical_reminder);
   }
 
-  lines.push(`\n## 评分明细\n`);
+  lines.push(`\n${T.scores_header}\n`);
 
   for (const r of body.results) {
     lines.push(`### ${r.scaleName}`);
-    if (r.timeFrame) lines.push(`时间窗口：${r.timeFrame}`);
+    if (r.timeFrame) lines.push(`${T.timeframe}${r.timeFrame}`);
     lines.push(
-      `分数方向：${r.highIsBetter ? "高分=能力强/状态好" : "高分=症状重/困扰多"}`
+      `${T.direction}${
+        r.highIsBetter ? T.dir_high_good : T.dir_high_bad
+      }`
     );
     for (const d of r.dimensions) {
       const scoreStr =
@@ -288,27 +346,65 @@ function buildUserPrompt(
           : formatScore(d.finalScore);
       const pctStr =
         d.percentile !== null && d.percentile !== undefined
-          ? `（第 ${d.percentile} 百分位）`
+          ? T.percentile(d.percentile)
           : "";
       const bandStr = d.bandLabel ? `[${d.bandLabel}]` : "";
-      lines.push(`- ${d.name}：${scoreStr} ${pctStr} ${bandStr}`);
+      lines.push(`- ${d.name}: ${scoreStr} ${pctStr} ${bandStr}`);
     }
     if (r.warnings && r.warnings.length > 0) {
-      lines.push(`⚠️ 警示题命中：`);
+      lines.push(T.warnings_hit);
       for (const w of r.warnings) {
-        lines.push(`  - "${w.itemText}" → 答 ${w.answer} (${w.flag})`);
+        lines.push(`  - "${w.itemText}" → ${w.answer} (${w.flag})`);
       }
     }
     lines.push("");
   }
 
-  // 标记 payload 已用于校验（保留以备未来扩展）
-  if (payload) lines.push(`（数据完整性已校验）`);
-
-  lines.push(`\n请按 system prompt 中的结构给出温暖、客观、可操作的解读。`);
+  if (payload) lines.push(T.integrity_ok);
+  lines.push(`\n${T.outro}`);
 
   return lines.join("\n");
 }
+
+const PROMPT_T_ZH = {
+  intro: `用户刚完成了一次心理评估。以下是结构化数据：\n`,
+  time: `评估时间：`,
+  concerns: `主诉勾选：`,
+  clinical_header: `## 综合临床判断（已由规则算出）`,
+  level: `等级：`,
+  summary: `摘要：`,
+  signals: `触发信号：`,
+  clinical_reminder: `请在"临床建议层级"段引用这个等级并具体化建议。`,
+  scores_header: `## 评分明细`,
+  timeframe: `时间窗口：`,
+  direction: `分数方向：`,
+  dir_high_good: `高分=能力强/状态好`,
+  dir_high_bad: `高分=症状重/困扰多`,
+  percentile: (p: number) => `（第 ${p} 百分位）`,
+  warnings_hit: `⚠️ 警示题命中：`,
+  integrity_ok: `（数据完整性已校验）`,
+  outro: `请按 system prompt 中的结构给出温暖、客观、可操作的解读。`,
+};
+
+const PROMPT_T_EN = {
+  intro: `The user just completed a psychological assessment. Structured data below:\n`,
+  time: `Assessment time: `,
+  concerns: `Concerns selected: `,
+  clinical_header: `## Integrated Clinical Judgment (rule-based)`,
+  level: `Level: `,
+  summary: `Summary: `,
+  signals: `Triggering signals:`,
+  clinical_reminder: `Please reference this level in the "Clinical Recommendation Level" section with concrete advice.`,
+  scores_header: `## Score Details`,
+  timeframe: `Timeframe: `,
+  direction: `Score direction: `,
+  dir_high_good: `high = strong / good state`,
+  dir_high_bad: `high = symptomatic / distressed`,
+  percentile: (p: number) => `(${p}th percentile)`,
+  warnings_hit: `⚠️ Warning items triggered:`,
+  integrity_ok: `(data integrity verified)`,
+  outro: `Follow the system prompt structure to give a warm, objective, actionable interpretation.`,
+};
 
 function formatScore(n: number): string {
   if (Number.isInteger(n)) return String(n);

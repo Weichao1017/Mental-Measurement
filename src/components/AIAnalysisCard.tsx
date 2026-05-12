@@ -6,6 +6,7 @@ import { encodeSession } from "@/lib/share";
 import type { Scale, ScaleResult, SessionState } from "@/lib/types";
 import type { ClinicalFlag } from "@/lib/clinical-flag";
 import { getPercentile } from "@/lib/norms";
+import { useT, useLang, pick } from "@/lib/lang";
 
 interface Props {
   session: SessionState;
@@ -16,6 +17,8 @@ interface Props {
 type Status = "idle" | "loading" | "thinking" | "streaming" | "done" | "error";
 
 export default function AIAnalysisCard({ session, results, clinicalFlag }: Props) {
+  const t = useT();
+  const { lang } = useLang();
   const [status, setStatus] = useState<Status>("idle");
   const [text, setText] = useState("");
   const [thinking, setThinking] = useState("");
@@ -31,6 +34,7 @@ export default function AIAnalysisCard({ session, results, clinicalFlag }: Props
     setErrorMsg(null);
 
     const payload = {
+      lang, // 让 API 端选择输出语言（中文 / English）
       d: encodeSession(session),
       startedAt: session.startedAt,
       concerns: session.concerns,
@@ -46,25 +50,37 @@ export default function AIAnalysisCard({ session, results, clinicalFlag }: Props
             })),
           }
         : null,
-      results: results.map(({ scale, result }) => ({
-        scaleId: scale.id,
-        scaleName: scale.name,
-        timeFrame: scale.timeFrame,
-        highIsBetter: scale.highIsBetter,
-        dimensions: result.dimensions.map((d) => ({
-          code: d.code,
-          name: d.name,
-          finalScore: d.finalScore,
-          maxScore: scale.dimensionMaxScore,
-          bandLabel: d.band?.label,
-          percentile: getPercentile(scale.id, d.code, d.finalScore),
-        })),
-        warnings: result.warnings.map((w) => ({
-          itemText: w.itemText,
-          answer: w.answer,
-          flag: w.flag,
-        })),
-      })),
+      results: results.map(({ scale, result }) => {
+        const scaleName = pick(scale.name, scale.nameEn, lang);
+        const timeFrame = pick(scale.timeFrame, scale.timeFrameEn, lang);
+        return {
+          scaleId: scale.id,
+          scaleName,
+          timeFrame,
+          highIsBetter: scale.highIsBetter,
+          dimensions: result.dimensions.map((d) => {
+            const dimInfo = scale.dimensions.find((x) => x.code === d.code);
+            const bandObj = scale.severityBands[d.code]?.find(
+              (b) => b.label === d.band?.label
+            );
+            return {
+              code: d.code,
+              name: pick(d.name, dimInfo?.nameEn, lang),
+              finalScore: d.finalScore,
+              maxScore: scale.dimensionMaxScore,
+              bandLabel: d.band
+                ? pick(d.band.label, bandObj?.labelEn, lang)
+                : undefined,
+              percentile: getPercentile(scale.id, d.code, d.finalScore),
+            };
+          }),
+          warnings: result.warnings.map((w) => ({
+            itemText: w.itemText,
+            answer: w.answer,
+            flag: w.flag,
+          })),
+        };
+      }),
     };
 
     try {
@@ -145,14 +161,13 @@ export default function AIAnalysisCard({ session, results, clinicalFlag }: Props
     <section className="mt-10 rounded-2xl border border-brand-200 bg-white p-6 shadow-sm">
       <header className="mb-4 flex flex-wrap items-baseline justify-between gap-3">
         <div>
-          <h2 className="font-serif text-xl text-ink">AI 深入分析</h2>
-          <p className="mt-1 text-xs text-brand-500">
-            由 Claude Opus 4 综合所有维度生成的个性化解读 · 仅供参考，不构成诊断
-          </p>
+          <h2 className="font-serif text-xl text-ink">{t("ai_title")}</h2>
+          <p className="mt-1 text-xs text-brand-500">{t("ai_subtitle")}</p>
         </div>
         {remaining !== null ? (
           <span className="text-xs text-brand-400">
-            今日剩余次数：{remaining}
+            {t("ai_remaining")}
+            {remaining}
           </span>
         ) : null}
       </header>
@@ -160,18 +175,16 @@ export default function AIAnalysisCard({ session, results, clinicalFlag }: Props
       {status === "idle" ? (
         <div>
           <p className="mb-4 text-sm leading-relaxed text-brand-700">
-            点下方按钮，AI 会读取你的全部维度分数 + 百分位 + 警示题，
-            生成一份温暖且有具体可操作建议的整体画像。这一份分析
-            <strong>仅用于本次访问的展示</strong>，不会被保存。
+            {t("ai_intro")}
           </p>
           <button type="button" onClick={start} className="btn-primary">
-            生成 AI 深入分析
+            {t("ai_start")}
           </button>
         </div>
       ) : null}
 
       {status === "loading" ? (
-        <p className="text-sm text-brand-600">正在请求 AI 分析…</p>
+        <p className="text-sm text-brand-600">{t("ai_loading")}</p>
       ) : null}
 
       {/* deepseek-reasoner 的思考过程：默认展开，进入正文时自动收起，可手动展开看 */}
@@ -182,9 +195,9 @@ export default function AIAnalysisCard({ session, results, clinicalFlag }: Props
           className="mb-4 rounded-lg border border-brand-200 bg-cream/60 p-4"
         >
           <summary className="cursor-pointer select-none text-xs font-medium text-brand-600 hover:text-brand-800">
-            {status === "thinking" ? "AI 正在深度思考…" : "查看 AI 思考过程"}
+            {status === "thinking" ? t("ai_thinking_active") : t("ai_thinking_view")}
             <span className="ml-2 text-brand-400">
-              ({thinking.length} 字)
+              {t("ai_thinking_chars_prefix")}{thinking.length}{t("ai_thinking_chars_suffix")}
             </span>
           </summary>
           <div className="mt-3 max-h-64 overflow-y-auto whitespace-pre-wrap text-xs leading-relaxed text-brand-500">
@@ -207,14 +220,14 @@ export default function AIAnalysisCard({ session, results, clinicalFlag }: Props
 
       {status === "error" ? (
         <div className="rounded-lg border border-rose-200 bg-rose-50 p-4 text-sm text-rose-900">
-          <div className="mb-1 font-medium">AI 分析请求失败</div>
+          <div className="mb-1 font-medium">{t("ai_error_title")}</div>
           <p>{errorMsg}</p>
           <button
             type="button"
             onClick={start}
             className="mt-3 rounded-full border border-rose-300 bg-white px-4 py-1.5 text-sm text-rose-700 hover:bg-rose-100"
           >
-            重试
+            {t("ai_retry")}
           </button>
         </div>
       ) : null}

@@ -165,8 +165,10 @@ function SliderInput({ options, value, onChange }: Props) {
       ? sorted.find((o) => o.value === displayLocal)
       : null;
 
-  const sliderValue =
-    displayLocal !== null ? displayLocal : Math.round((minValue + maxValue) / 2);
+  // 未选时 slider 显示在最左（minValue）。
+  // 这跟大多数频率类量表的语义一致：「0 / 1 = 完全没有」是合理默认起点。
+  // 如果默认放在 middle，对 GAD-7 等量表会让用户误以为"中度"是初始选项。
+  const sliderValue = displayLocal !== null ? displayLocal : minValue;
 
   const handleInput = (e: React.ChangeEvent<HTMLInputElement>) => {
     setHasInteracted(true);
@@ -174,30 +176,31 @@ function SliderInput({ options, value, onChange }: Props) {
   };
 
   const handleCommit = () => {
-    if (localValue !== null && localValue !== value) {
+    // 永远 commit 当前 localValue（即使 value 没变也要 notify ScaleRunner，
+    // 这样用户"单击当前 thumb 位置"也算作"选定该值"）
+    if (localValue !== null) {
       onChange(localValue);
     }
   };
 
-  // 整个 slider 行可点击：点击 track 任意位置 → thumb 跳过去 + commit。
-  // 比依赖浏览器原生 input[type=range] click-to-track 行为更可靠
-  // （后者在 macOS 系统设置 / Safari 部分版本下会失效）。
+  // 单击 wrapper 任意位置 → thumb 跳到那 + commit。
+  // 用 onClick 而非 onPointerDown：onClick 在 drag 时不触发（mousedown/mouseup
+  // 位置不同的 case 浏览器不识别为 click），单击时才触发，正好分开两种交互。
+  // 即使用户单击 thumb 当前位置（value 不变），handleCommit 也会 onChange，
+  // 让 ScaleRunner 把该题标记为"已答" + 自动滚到下一题。
   const trackRef = useRef<HTMLDivElement>(null);
-  const handleTrackPointerDown = (e: React.PointerEvent<HTMLDivElement>) => {
+  const sliderInputRef = useRef<HTMLInputElement>(null);
+  const handleTrackClick = (e: React.MouseEvent<HTMLDivElement>) => {
     const rect = trackRef.current?.getBoundingClientRect();
     if (!rect || rect.width === 0) return;
     const ratio = Math.max(0, Math.min(1, (e.clientX - rect.left) / rect.width));
     const span = maxValue - minValue;
-    // round 到最近的整数 step（所有量表 step=1）
     const v = Math.round(minValue + ratio * span);
     setHasInteracted(true);
     setLocalValue(v);
-    // 立即 commit（跟拖动不同，单击是"已选定"的动作）
-    if (v !== value) onChange(v);
-    // 移交焦点给 input，让键盘箭头键能立即调整
+    onChange(v); // 永远 commit（即使 v === value）
     sliderInputRef.current?.focus();
   };
-  const sliderInputRef = useRef<HTMLInputElement>(null);
 
   const leftLabel = sorted[0].short ?? sorted[0].label;
   const rightLabel = sorted[n - 1].short ?? sorted[n - 1].label;
@@ -215,10 +218,10 @@ function SliderInput({ options, value, onChange }: Props) {
         )}
       </div>
 
-      {/* 滑块 + 刻度 — 整行可点击，点击任意位置 thumb 跳过去 */}
+      {/* 滑块 + 刻度 — 整行可点击，单击任意位置 thumb 跳过去 + commit */}
       <div
         ref={trackRef}
-        onPointerDown={handleTrackPointerDown}
+        onClick={handleTrackClick}
         className="relative cursor-pointer px-2 py-3 select-none"
       >
         {/* 中间刻度点 */}
@@ -249,8 +252,6 @@ function SliderInput({ options, value, onChange }: Props) {
           onTouchEnd={handleCommit}
           onKeyUp={handleCommit}
           onBlur={handleCommit}
-          // 阻止 input 自己的 pointerdown 冒泡到 wrapper（避免双重处理）
-          onPointerDown={(e) => e.stopPropagation()}
           aria-label="选择程度"
           className={[
             "relative w-full appearance-none bg-transparent",

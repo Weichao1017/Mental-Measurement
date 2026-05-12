@@ -11,15 +11,25 @@ import { getScale } from "@/lib/scales";
 import { scoreScale } from "@/lib/scoring";
 import { loadSession, clearSession } from "@/lib/store";
 import { buildShareUrl, encodeSession } from "@/lib/share";
-import { computeClinicalFlag } from "@/lib/clinical-flag";
-import { useT, useLang } from "@/lib/lang";
+import { computeClinicalFlag, type ClinicalLevel } from "@/lib/clinical-flag";
+import { getPercentile } from "@/lib/norms";
+import { useT, useLang, pick, type Lang } from "@/lib/lang";
 import type { SessionState, ScaleResult, Scale } from "@/lib/types";
+
+const LEVEL_TEXT_MAP: Record<ClinicalLevel, { zh: string; en: string }> = {
+  urgent: { zh: "紧急", en: "Urgent" },
+  strong: { zh: "强烈建议专业评估", en: "Strongly advised" },
+  consult: { zh: "建议心理咨询", en: "Counseling recommended" },
+  self_help: { zh: "自助 / 常规范围", en: "Self-help / normal range" },
+};
 
 export default function ResultsPage() {
   const t = useT();
   const { lang } = useLang();
   const [session, setSession] = useState<SessionState | null>(null);
   const [shareOpen, setShareOpen] = useState(false);
+  const [aiText, setAiText] = useState("");
+  const [copied, setCopied] = useState(false);
 
   useEffect(() => {
     setSession(loadSession());
@@ -129,7 +139,40 @@ export default function ResultsPage() {
           session={session}
           results={results.map((r) => ({ scale: r.scale, result: r.result }))}
           clinicalFlag={clinicalFlag}
+          onTextChange={setAiText}
         />
+
+        {/* 一键复制全部结果 */}
+        <div className="mt-8 rounded-2xl border border-brand-200 bg-white p-6">
+          <h2 className="mb-2 font-serif text-lg text-ink">
+            {t("results_copy_title")}
+          </h2>
+          <p className="mb-4 text-sm leading-relaxed text-brand-700">
+            {t("results_copy_desc")}
+          </p>
+          <button
+            type="button"
+            className="btn-primary"
+            onClick={async () => {
+              const md = buildClipboardMarkdown({
+                session,
+                results,
+                clinicalFlag,
+                aiText,
+                lang,
+              });
+              try {
+                await navigator.clipboard.writeText(md);
+                setCopied(true);
+                setTimeout(() => setCopied(false), 2500);
+              } catch {
+                window.prompt(t("results_copy_fallback"), md);
+              }
+            }}
+          >
+            {copied ? `✓ ${t("results_copy_done")}` : t("results_copy_btn")}
+          </button>
+        </div>
 
         <div className="mt-10 rounded-2xl border border-sage-200 bg-sage-50 p-6">
           <h2 className="mb-2 font-serif text-lg text-ink">
@@ -177,4 +220,140 @@ export default function ResultsPage() {
       </div>
     </Container>
   );
+}
+
+/**
+ * 把整个 results 页的内容（量表分数 + 完整切点表 + 临床建议 + AI 分析）
+ * 序列化为 markdown 文本，方便复制到 IM / 文档 / 邮件。
+ */
+function buildClipboardMarkdown(args: {
+  session: SessionState;
+  results: Array<{ scaleId: string; scale: Scale; result: ScaleResult }>;
+  clinicalFlag: ReturnType<typeof computeClinicalFlag> | null;
+  aiText: string;
+  lang: Lang;
+}): string {
+  const { session, results, clinicalFlag, aiText, lang } = args;
+  const lines: string[] = [];
+
+  lines.push(lang === "en" ? "# Mental Health Assessment Results" : "# 心理评估结果");
+  lines.push("");
+  lines.push(`${lang === "en" ? "Assessment time" : "评估时间"}: ${formatDate(session.startedAt)}`);
+  if (session.concerns.length) {
+    lines.push(`${lang === "en" ? "Concerns" : "主诉勾选"}: ${session.concerns.join(", ")}`);
+  }
+  lines.push("");
+
+  // 综合建议
+  if (clinicalFlag) {
+    lines.push(`## ${lang === "en" ? "Integrated Recommendation" : "综合建议"}`);
+    lines.push(`**${lang === "en" ? "Level" : "等级"}**: ${LEVEL_TEXT_MAP[clinicalFlag.level][lang]}`);
+    lines.push("");
+    lines.push(clinicalFlag.summary);
+    if (clinicalFlag.signals.length > 0) {
+      lines.push("");
+      lines.push(`**${lang === "en" ? "Triggering signals" : "触发信号"}**:`);
+      for (const s of clinicalFlag.signals) {
+        const w = s.warning ? " ⚠️" : "";
+        lines.push(`- [${s.level}] ${s.scaleName}: ${s.description}${w}`);
+      }
+    }
+    if (clinicalFlag.recommendations.length > 0) {
+      lines.push("");
+      lines.push(`**${lang === "en" ? "Suggested actions" : "建议行动"}**:`);
+      clinicalFlag.recommendations.forEach((r, i) => lines.push(`${i + 1}. ${r}`));
+    }
+    lines.push("");
+  }
+
+  // 各量表
+  for (const { scale, result } of results) {
+    const scaleName = pick(scale.name, scale.nameEn, lang);
+    lines.push(`## ${scaleName}`);
+    if (scale.citation) {
+      lines.push(`> ${lang === "en" ? "Citation" : "引用"}: ${scale.citation}`);
+    }
+    lines.push("");
+
+    for (const d of result.dimensions) {
+      const dimInfo = scale.dimensions.find((x) => x.code === d.code);
+      const dName = pick(d.name, dimInfo?.nameEn, lang);
+      const bandObj = scale.severityBands[d.code]?.find(
+        (b) => b.label === d.band?.label
+      );
+      const bandLabel = d.band ? pick(d.band.label, bandObj?.labelEn, lang) : "";
+      const scoreStr = scale.dimensionMaxScore
+        ? `${formatScore(d.finalScore, scale.scoringMethod)} / ${scale.dimensionMaxScore}`
+        : `${formatScore(d.finalScore, scale.scoringMethod)}`;
+      const percentile = getPercentile(scale.id, d.code, d.finalScore);
+      const pctStr =
+        percentile !== null ? ` (P${percentile})` : "";
+
+      lines.push(`### ${dName}: ${scoreStr}${pctStr}${bandLabel ? ` — ${bandLabel}` : ""}`);
+
+      // 全部切点
+      const bands = scale.severityBands[d.code] ?? [];
+      if (bands.length > 0) {
+        lines.push("");
+        lines.push(lang === "en" ? "**Cutoff table:**" : "**完整切点表:**");
+        for (const b of bands) {
+          const range =
+            b.max === null
+              ? `${b.min}+`
+              : b.min === b.max
+                ? `${b.min}`
+                : `${b.min}-${b.max}`;
+          const label = pick(b.label, b.labelEn, lang);
+          const isCurrent = b.label === d.band?.label;
+          const marker = isCurrent ? " ← " : "   ";
+          const wrap = isCurrent ? "**" : "";
+          lines.push(`- ${marker}${wrap}${range}: ${label}${wrap}`);
+        }
+      }
+      lines.push("");
+    }
+
+    if (result.warnings.length > 0) {
+      lines.push(`**⚠️ ${lang === "en" ? "Warning items triggered" : "警示题命中"}:**`);
+      for (const w of result.warnings) {
+        lines.push(`- "${w.itemText}" → ${lang === "en" ? "answered" : "答"} ${w.answer} (${w.flag})`);
+      }
+      lines.push("");
+    }
+  }
+
+  // AI 分析（如果已生成）
+  if (aiText.trim()) {
+    lines.push("---");
+    lines.push("");
+    lines.push(`## ${lang === "en" ? "AI Deep Analysis" : "AI 深入分析"}`);
+    lines.push("");
+    lines.push(aiText);
+    lines.push("");
+  }
+
+  lines.push("---");
+  lines.push(
+    lang === "en"
+      ? "_Generated by assessment.ai1017.com. This is not a clinical diagnosis._"
+      : "_由 assessment.ai1017.com 生成。本评估不构成临床诊断。_"
+  );
+
+  return lines.join("\n");
+}
+
+function formatScore(n: number, method: Scale["scoringMethod"]): string {
+  if (method === "mean") return n.toFixed(2);
+  return String(Math.round(n));
+}
+
+function formatDate(iso: string): string {
+  try {
+    const d = new Date(iso);
+    if (isNaN(d.getTime())) return iso;
+    const pad = (n: number) => String(n).padStart(2, "0");
+    return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())} ${pad(d.getHours())}:${pad(d.getMinutes())}`;
+  } catch {
+    return iso;
+  }
 }

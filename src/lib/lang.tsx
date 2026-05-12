@@ -290,6 +290,20 @@ export const UI = {
     en: "Generate Link / QR Code for Therapist",
   },
   results_restart: { zh: "清空并重新开始", en: "Clear and Restart" },
+  results_copy_title: {
+    zh: "复制完整结果（含切点表 + AI 分析）",
+    en: "Copy Full Results (cutoffs + AI analysis)",
+  },
+  results_copy_desc: {
+    zh: "一键把全部量表分数、完整切点表、综合建议和 AI 分析复制为 Markdown 文本，方便粘贴到聊天工具 / 邮件 / 文档里发给医生或自己存档。",
+    en: "Copy all scale scores, full cutoff tables, integrated recommendation, and AI analysis as Markdown — easy to paste into chat / email / document for a clinician or your own records.",
+  },
+  results_copy_btn: { zh: "复制全部结果", en: "Copy Full Results" },
+  results_copy_done: { zh: "已复制", en: "Copied" },
+  results_copy_fallback: {
+    zh: "你的浏览器不支持自动复制，请手动复制下方文本：",
+    en: "Your browser doesn't support auto-copy. Please copy the text below manually:",
+  },
   results_disclaimer_title: { zh: "免责声明：", en: "Disclaimer: " },
   results_disclaimer_body: {
     zh: "本评估基于公开发表的心理量表改编整理，结果仅供自我了解和与老师的工作参考，不构成任何临床诊断。如果你或你身边的人出现持续的低落、强烈的无望感或自伤想法，请尽快联系专业心理科 / 精神科，或拨打上述危机干预热线。",

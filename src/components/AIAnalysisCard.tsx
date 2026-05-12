@@ -12,11 +12,13 @@ interface Props {
   session: SessionState;
   results: Array<{ scale: Scale; result: ScaleResult }>;
   clinicalFlag?: ClinicalFlag | null;
+  /** 当 AI 输出 text 变化时回调（让 results 页能复制 AI 内容） */
+  onTextChange?: (text: string) => void;
 }
 
 type Status = "idle" | "loading" | "thinking" | "streaming" | "done" | "error";
 
-export default function AIAnalysisCard({ session, results, clinicalFlag }: Props) {
+export default function AIAnalysisCard({ session, results, clinicalFlag, onTextChange }: Props) {
   const t = useT();
   const { lang } = useLang();
   const [status, setStatus] = useState<Status>("idle");
@@ -56,13 +58,13 @@ export default function AIAnalysisCard({ session, results, clinicalFlag }: Props
         return {
           scaleId: scale.id,
           scaleName,
+          citation: scale.citation,
           timeFrame,
           highIsBetter: scale.highIsBetter,
           dimensions: result.dimensions.map((d) => {
             const dimInfo = scale.dimensions.find((x) => x.code === d.code);
-            const bandObj = scale.severityBands[d.code]?.find(
-              (b) => b.label === d.band?.label
-            );
+            const bands = scale.severityBands[d.code] ?? [];
+            const bandObj = bands.find((b) => b.label === d.band?.label);
             return {
               code: d.code,
               name: pick(d.name, dimInfo?.nameEn, lang),
@@ -72,6 +74,13 @@ export default function AIAnalysisCard({ session, results, clinicalFlag }: Props
                 ? pick(d.band.label, bandObj?.labelEn, lang)
                 : undefined,
               percentile: getPercentile(scale.id, d.code, d.finalScore),
+              // 完整切点表传给 AI 引用
+              bands: bands.map((b) => ({
+                level: b.level,
+                label: pick(b.label, b.labelEn, lang),
+                min: b.min,
+                max: b.max,
+              })),
             };
           }),
           warnings: result.warnings.map((w) => ({
@@ -130,7 +139,11 @@ export default function AIAnalysisCard({ session, results, clinicalFlag }: Props
               if (typeof obj.text === "string") {
                 setStatus("streaming");
                 setThinkingOpen(false); // 进入正文阶段，自动收起思考过程
-                setText((prev) => prev + obj.text);
+                setText((prev) => {
+                  const next = prev + obj.text;
+                  onTextChange?.(next);
+                  return next;
+                });
               }
             } catch {}
           } else if (evt.event === "done") {

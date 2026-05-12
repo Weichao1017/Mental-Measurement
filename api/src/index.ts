@@ -298,7 +298,6 @@ Hard constraints:
 - Reference specific numbers ("DASS-21 Anxiety 14/42, 88th percentile") for credibility
 - If a scale is incomplete, say "this dimension wasn't assessed in this round" rather than forcing interpretation
 - Do not output markdown code blocks or extra explanation — start directly from "## Overall State"`;
-}
 
 function buildUserPrompt(
   body: AnalyzeBody,

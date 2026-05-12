@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import type { LikertOption } from "@/lib/types";
 import { useT } from "@/lib/lang";
 
@@ -179,6 +179,26 @@ function SliderInput({ options, value, onChange }: Props) {
     }
   };
 
+  // 整个 slider 行可点击：点击 track 任意位置 → thumb 跳过去 + commit。
+  // 比依赖浏览器原生 input[type=range] click-to-track 行为更可靠
+  // （后者在 macOS 系统设置 / Safari 部分版本下会失效）。
+  const trackRef = useRef<HTMLDivElement>(null);
+  const handleTrackPointerDown = (e: React.PointerEvent<HTMLDivElement>) => {
+    const rect = trackRef.current?.getBoundingClientRect();
+    if (!rect || rect.width === 0) return;
+    const ratio = Math.max(0, Math.min(1, (e.clientX - rect.left) / rect.width));
+    const span = maxValue - minValue;
+    // round 到最近的整数 step（所有量表 step=1）
+    const v = Math.round(minValue + ratio * span);
+    setHasInteracted(true);
+    setLocalValue(v);
+    // 立即 commit（跟拖动不同，单击是"已选定"的动作）
+    if (v !== value) onChange(v);
+    // 移交焦点给 input，让键盘箭头键能立即调整
+    sliderInputRef.current?.focus();
+  };
+  const sliderInputRef = useRef<HTMLInputElement>(null);
+
   const leftLabel = sorted[0].short ?? sorted[0].label;
   const rightLabel = sorted[n - 1].short ?? sorted[n - 1].label;
 
@@ -195,8 +215,12 @@ function SliderInput({ options, value, onChange }: Props) {
         )}
       </div>
 
-      {/* 滑块 + 刻度 */}
-      <div className="relative px-2 pb-1">
+      {/* 滑块 + 刻度 — 整行可点击，点击任意位置 thumb 跳过去 */}
+      <div
+        ref={trackRef}
+        onPointerDown={handleTrackPointerDown}
+        className="relative cursor-pointer px-2 py-3 select-none"
+      >
         {/* 中间刻度点 */}
         <div className="pointer-events-none absolute left-2 right-2 top-1/2 flex -translate-y-1/2 items-center justify-between">
           {sorted.map((opt, i) => (
@@ -214,6 +238,7 @@ function SliderInput({ options, value, onChange }: Props) {
         </div>
 
         <input
+          ref={sliderInputRef}
           type="range"
           min={minValue}
           max={maxValue}
@@ -224,6 +249,8 @@ function SliderInput({ options, value, onChange }: Props) {
           onTouchEnd={handleCommit}
           onKeyUp={handleCommit}
           onBlur={handleCommit}
+          // 阻止 input 自己的 pointerdown 冒泡到 wrapper（避免双重处理）
+          onPointerDown={(e) => e.stopPropagation()}
           aria-label="选择程度"
           className={[
             "relative w-full appearance-none bg-transparent",

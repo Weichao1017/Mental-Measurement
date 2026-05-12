@@ -317,6 +317,11 @@ export const UI = {
     en: " (Australian adult non-clinical norm, N=1771)",
   },
   rc_citation: { zh: "引用：", en: "Citation: " },
+  rc_cutoffs_view: {
+    zh: "▸ 展开完整切点表",
+    en: "▸ Show full cutoff table",
+  },
+  rc_cutoffs_source: { zh: "来源：", en: "Source: " },
 
   // AI 分析
   ai_title: { zh: "AI 深入分析", en: "AI In-depth Analysis" },

@@ -78,6 +78,51 @@ export default function ResultCard({ scale, result }: Props) {
                   {clientNote}
                 </p>
               ) : null}
+
+              {/* 完整切点表（折叠展示，客观分级体系，不依赖 AI） */}
+              {scale.severityBands[d.code]?.length ? (
+                <details className="mt-3 rounded-lg bg-cream/40 px-3 py-2">
+                  <summary className="cursor-pointer select-none text-xs font-medium text-brand-600 hover:text-brand-800">
+                    {t("rc_cutoffs_view")}
+                  </summary>
+                  <ul className="mt-2 space-y-1 font-mono text-xs leading-relaxed">
+                    {scale.severityBands[d.code].map((b) => {
+                      const isCurrent = b.label === d.band?.label;
+                      const range =
+                        b.max === null
+                          ? `${b.min}+`
+                          : b.min === b.max
+                            ? `${b.min}`
+                            : `${b.min}-${b.max}`;
+                      const label = pick(b.label, b.labelEn, lang);
+                      return (
+                        <li
+                          key={b.label}
+                          className={
+                            isCurrent
+                              ? "font-semibold text-ink"
+                              : "text-brand-600"
+                          }
+                        >
+                          <span className="inline-block w-4 shrink-0">
+                            {isCurrent ? "→" : " "}
+                          </span>
+                          <span className="inline-block w-16 tabular-nums">
+                            {range}
+                          </span>
+                          <span>{label}</span>
+                        </li>
+                      );
+                    })}
+                  </ul>
+                  {scale.citation ? (
+                    <p className="mt-2 border-t border-brand-100 pt-2 font-sans text-[11px] leading-relaxed text-brand-400">
+                      {t("rc_cutoffs_source")}
+                      {scale.citation}
+                    </p>
+                  ) : null}
+                </details>
+              ) : null}
             </div>
           );
         })}

@@ -87,6 +87,17 @@ interface AnalyzeBody {
   }>;
   concerns?: string[];
   startedAt?: string;
+  /** 前端规则化算出的综合临床判断（用于 AI 综合解读时引用） */
+  clinicalFlag?: {
+    level: "urgent" | "strong" | "consult" | "self_help";
+    summary: string;
+    signals: Array<{
+      scaleName: string;
+      description: string;
+      level: string;
+      warning: boolean;
+    }>;
+  } | null;
 }
 
 app.post("/api/analyze", async (c) => {
@@ -198,21 +209,35 @@ function buildSystemPrompt(): string {
 ## 值得关注的方面
 列 2-3 点需要留意或可能从专业支持中受益的方面。语气温和，不制造焦虑。
 
+## 临床建议层级
+**这一段必须明确给出"自助 / 心理咨询 / 精神科评估 / 紧急就医"四个层级中的一个判断**，并说明理由。
+用户的数据中带有 clinicalFlag 字段，已经规则化算出建议层级（self_help / consult / strong / urgent），请引用这个层级并具体化：
+- urgent → 24-48 小时内联系精神科；提供危机干预热线
+- strong → 一周内预约精神科 / 临床心理咨询师；如考虑 SSRI 务必先看 MDQ 结果排除双相
+- consult → 寻找心理咨询师做 6-12 次支持性会谈；1-2 个月后复测
+- self_help → 自助 + 课程足够，可以做正念 / 自我关怀练习维持
+
+特别提示：
+- 如 MDQ Q1-13 ≥ 7 且 Q14 是、Q15 中度以上：双相阳性，上 SSRI 前必须先看精神科
+- 如 ASRS Part A ≥ 14：ADHD 阳性，建议做正规 ADHD 评估（SSRI 对 ADHD 无效）
+- 如 GAD-7 ≥ 15 或 PHQ-9 ≥ 15：症状已经严重影响生活，优先专业介入
+- 如 WSAS ≥ 20：心理问题已经把生活搞乱，无论症状量表如何都要正视
+
 ## 给疗愈师 / 咨询师的工作方向
-一段 3-5 句。具体到可操作的会谈聚焦点、推荐的工作方法（如 ACT、CFT、somatic、attachment-based、MBCT 等），以及需要补充评估的方向。
+一段 3-5 句。具体到可操作的会谈聚焦点、推荐的工作方法（ACT、CFT、somatic、attachment-based、MBCT、CBT、RFCBT 等），以及需要补充评估的方向。
 
 ## 给你自己的话
 一段 2-3 句温和的、人性化的、像朋友说话一样的提醒。不要居高临下，不要复述上面已经说过的内容。
 
-## 重要警示（仅当数据中 warnings 字段非空时才输出此节）
-若有自杀意念警示题命中，必须在此节明确列出求助资源：
+## 重要警示（仅当数据中 warnings 字段非空，或 clinicalFlag.level = urgent 时才输出此节）
+若有自杀意念警示题命中或临床等级为 urgent，必须在此节明确列出求助资源：
 - 北京心理危机研究与干预中心：010-82951332（24 小时）
 - 全国希望热线：400-161-9995
 - 华中师范大学心理援助热线：4001-888-976（24 小时）
 并明确鼓励用户寻求专业支持。
 
 硬约束：
-- 总长不超过 800 字
+- 总长不超过 1000 字
 - 避免临床诊断词汇（如「您患有抑郁症」），改用「评分提示焦虑倾向较显著」之类
 - 客观又温暖，不写冷冰冰的报告口吻
 - 引用具体数字（"DASS-21 焦虑维度 14/42，第 88 百分位"）以增加可信度
@@ -230,6 +255,22 @@ function buildUserPrompt(
   if (body.startedAt) lines.push(`评估时间：${body.startedAt}`);
   if (body.concerns && body.concerns.length > 0) {
     lines.push(`主诉勾选：${body.concerns.join(", ")}`);
+  }
+
+  // 前端已规则化算出的综合临床判断
+  if (body.clinicalFlag) {
+    lines.push(`\n## 综合临床判断（已由规则算出）`);
+    lines.push(`- 等级：${body.clinicalFlag.level}`);
+    lines.push(`- 摘要：${body.clinicalFlag.summary}`);
+    if (body.clinicalFlag.signals.length > 0) {
+      lines.push(`- 触发信号：`);
+      for (const s of body.clinicalFlag.signals) {
+        const w = s.warning ? " ⚠️" : "";
+        lines.push(`  · [${s.level}] ${s.scaleName}: ${s.description}${w}`);
+      }
+    }
+    lines.push("");
+    lines.push(`请在"临床建议层级"段引用这个等级并具体化建议。`);
   }
 
   lines.push(`\n## 评分明细\n`);

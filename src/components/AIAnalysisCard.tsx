@@ -4,16 +4,18 @@ import { useState } from "react";
 import ReactMarkdown from "react-markdown";
 import { encodeSession } from "@/lib/share";
 import type { Scale, ScaleResult, SessionState } from "@/lib/types";
+import type { ClinicalFlag } from "@/lib/clinical-flag";
 import { getPercentile } from "@/lib/norms";
 
 interface Props {
   session: SessionState;
   results: Array<{ scale: Scale; result: ScaleResult }>;
+  clinicalFlag?: ClinicalFlag | null;
 }
 
 type Status = "idle" | "loading" | "thinking" | "streaming" | "done" | "error";
 
-export default function AIAnalysisCard({ session, results }: Props) {
+export default function AIAnalysisCard({ session, results, clinicalFlag }: Props) {
   const [status, setStatus] = useState<Status>("idle");
   const [text, setText] = useState("");
   const [thinking, setThinking] = useState("");
@@ -32,6 +34,18 @@ export default function AIAnalysisCard({ session, results }: Props) {
       d: encodeSession(session),
       startedAt: session.startedAt,
       concerns: session.concerns,
+      clinicalFlag: clinicalFlag
+        ? {
+            level: clinicalFlag.level,
+            summary: clinicalFlag.summary,
+            signals: clinicalFlag.signals.map((s) => ({
+              scaleName: s.scaleName,
+              description: s.description,
+              level: s.level,
+              warning: s.warning ?? false,
+            })),
+          }
+        : null,
       results: results.map(({ scale, result }) => ({
         scaleId: scale.id,
         scaleName: scale.name,

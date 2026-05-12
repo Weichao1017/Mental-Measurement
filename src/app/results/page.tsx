@@ -6,10 +6,12 @@ import Container from "@/components/Container";
 import ResultCard from "@/components/ResultCard";
 import ShareDialog from "@/components/ShareDialog";
 import AIAnalysisCard from "@/components/AIAnalysisCard";
+import ClinicalFlagCard from "@/components/ClinicalFlagCard";
 import { getScale } from "@/lib/scales";
 import { scoreScale } from "@/lib/scoring";
 import { loadSession, clearSession } from "@/lib/store";
 import { buildShareUrl, encodeSession } from "@/lib/share";
+import { computeClinicalFlag } from "@/lib/clinical-flag";
 import type { SessionState, ScaleResult, Scale } from "@/lib/types";
 
 export default function ResultsPage() {
@@ -39,6 +41,13 @@ export default function ResultsPage() {
     return out;
   }, [session]);
 
+  const clinicalFlag = useMemo(() => {
+    if (results.length === 0) return null;
+    return computeClinicalFlag(
+      results.map((r) => ({ scale: r.scale, result: r.result }))
+    );
+  }, [results]);
+
   if (!session) {
     return (
       <Container>
@@ -66,15 +75,15 @@ export default function ResultsPage() {
           不代表你这个人。和老师交流时，可以把这份结果作为对话的起点。
         </p>
 
+        {clinicalFlag ? <ClinicalFlagCard flag={clinicalFlag} /> : null}
+
         {anyWarnings ? (
           <div className="mb-8 rounded-2xl border border-rose-200 bg-rose-50 p-6">
-            <h2 className="mb-2 font-serif text-lg text-rose-900">温柔的提醒</h2>
-            <p className="text-sm leading-relaxed text-rose-800">
-              你在涉及自我价值或生命意义的问题上选择了较高的程度。
-              这些感受是真实的、值得被认真对待。请记得：你不必独自承担。
-              专业的支持随时可以拨打：
+            <h2 className="mb-2 font-serif text-lg text-rose-900">危机干预热线</h2>
+            <p className="mb-2 text-sm leading-relaxed text-rose-800">
+              如果你正在经历强烈的低落、无望感或自伤想法——这些感受是真实的、值得被认真对待。你不必独自承担：
             </p>
-            <ul className="mt-3 list-inside list-disc space-y-1 text-sm text-rose-800">
+            <ul className="list-inside list-disc space-y-1 text-sm text-rose-800">
               <li>北京心理危机研究与干预中心：010-82951332（24 小时）</li>
               <li>全国希望热线：400-161-9995</li>
               <li>华中师范大学心理援助热线：4001-888-976（24 小时）</li>
@@ -92,6 +101,7 @@ export default function ResultsPage() {
         <AIAnalysisCard
           session={session}
           results={results.map((r) => ({ scale: r.scale, result: r.result }))}
+          clinicalFlag={clinicalFlag}
         />
 
         <div className="mt-10 rounded-2xl border border-sage-200 bg-sage-50 p-6">

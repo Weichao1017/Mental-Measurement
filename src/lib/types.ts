@@ -13,6 +13,12 @@ export interface ScaleItem {
   /** 题目额外标签（如自杀意念警示题、需要单独处理） */
   flags?: Array<"suicidal_ideation" | "warning">;
   /**
+   * 警示题的触发阈值（≥ 该值才触发警示）。默认 2。
+   * - DASS-21 #21 用默认 2（"很大程度上符合"才触发）
+   * - PHQ-9 #9 临床惯例用 1（"好几天"已需进一步评估）
+   */
+  flagThreshold?: number;
+  /**
    * 来源标注（用于审计 / 引用透明度）
    * 例如 DASS-21 #1 来自 DASS-42 #22
    */
@@ -72,6 +78,13 @@ export interface Scale {
   estimatedMinutes: number;
   /** 是否核心量表（所有客户必填） */
   isCore: boolean;
+  /**
+   * 分类（题库页分组用）。常见值：
+   *  - "anxiety_clinical"：焦虑情绪测评（GAD-7、PHQ-9、MDQ、WSAS、PSWQ、RRS-10、ASRS）
+   *  - "general"：综合 / 默认（DASS-21、WHO-5 等其它）
+   * 未设置则归入 "其他评估"。
+   */
+  category?: string;
   /**
    * 分数方向：true 表示高分=能力强/状态好（如 WHO-5、FFMQ、SCS、MAIA），
    * false 表示高分=症状重/困难多（如 DASS-21、DERS-SF、ECR-12、PSQI）。

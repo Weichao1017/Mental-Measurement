@@ -133,6 +133,7 @@ export default function ScaleRunner({ scale }: Props) {
             onChange={(v) => handleAnswer(item.index, v)}
             unverified={item.unverified}
             flagWarning={item.flags?.includes("suicidal_ideation")}
+            flagThreshold={item.flagThreshold}
           />
         ))}
       </div>

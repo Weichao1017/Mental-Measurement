@@ -18,6 +18,8 @@ interface Props {
   unverified?: boolean;
   /** 警示题标识（如自杀意念） */
   flagWarning?: boolean;
+  /** 警示触发阈值，默认 2（DASS-21 #21）；PHQ-9 #9 设 1 更敏感 */
+  flagThreshold?: number;
   /** HTML id（供锚点滚动） */
   id?: string;
 }
@@ -49,6 +51,7 @@ function Shell({
   value,
   unverified,
   flagWarning,
+  flagThreshold,
   children,
 }: Props & { children: React.ReactNode }) {
   const answered = value !== null;
@@ -82,7 +85,7 @@ function Shell({
 
       {children}
 
-      {flagWarning && value !== null && value >= 2 ? (
+      {flagWarning && value !== null && value >= (flagThreshold ?? 2) ? (
         <div className="mt-4 rounded-xl border border-rose-200 bg-rose-50 p-4 text-sm leading-relaxed text-rose-900">
           <div className="mb-1 font-medium">我们注意到您选择的程度较高</div>
           <p>

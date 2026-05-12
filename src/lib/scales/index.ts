@@ -7,6 +7,14 @@ import { maia2 } from "./maia2";
 import { dersSf } from "./ders-sf";
 import { psqi } from "./psqi";
 import { ecr12 } from "./ecr12";
+// 焦虑情绪测评组（金标准 + 加项）
+import { gad7 } from "./gad7";
+import { phq9 } from "./phq9";
+import { mdq } from "./mdq";
+import { wsas } from "./wsas";
+import { pswq } from "./pswq";
+import { rrs10 } from "./rrs10";
+import { asrs } from "./asrs";
 import type { Concern, Scale } from "../types";
 
 export const SCALES: Record<string, Scale> = {
@@ -18,6 +26,13 @@ export const SCALES: Record<string, Scale> = {
   "ders-sf": dersSf,
   psqi,
   ecr12,
+  gad7,
+  phq9,
+  mdq,
+  wsas,
+  pswq,
+  rrs10,
+  asrs,
 };
 
 /** 默认核心套装：所有人必做的最少集合 */

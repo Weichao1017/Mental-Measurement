@@ -56,9 +56,10 @@ export function scoreScale(scale: Scale, response: ScaleResponse): ScaleResult {
     if (!item.flags?.length) continue;
     const ans = answers[item.index];
     if (typeof ans !== "number") continue;
-    // 触发条件：分数 >= 2 即视为命中（按 0-3 量表）
-    // 不同量表可能要不同阈值，这里走通用规则
-    if (ans >= 2) {
+    // 触发条件：分数 >= item.flagThreshold（默认 2，按 0-3 量表保守阈值）
+    // PHQ-9 #9 等需要更敏感的题目可以设 flagThreshold: 1
+    const threshold = item.flagThreshold ?? 2;
+    if (ans >= threshold) {
       for (const flag of item.flags) {
         warnings.push({
           itemIndex: item.index,

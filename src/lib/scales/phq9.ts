@@ -1,0 +1,138 @@
+/**
+ * PHQ-9 患者健康问卷-9（Patient Health Questionnaire-9）
+ *
+ * 抑郁筛查的国际通用工具。焦虑常和抑郁共病，必须同时筛。
+ * 第 9 题专门问自杀意念，是临床高度关注项目。
+ *
+ * ⚠️ 题目内容：经 Claude 从英文原版翻译，未与权威中文修订版（胡星辰 2014 等）逐字核对。
+ *
+ * 来源：
+ *   - Kroenke, K., Spitzer, R. L., & Williams, J. B. (2001).
+ *     The PHQ-9: Validity of a brief depression severity measure.
+ *     Journal of General Internal Medicine, 16(9), 606-613.
+ *   - 中文版：胡星辰, 张迎黎, 梁炜, 张红梅, 杨世昌. (2014).
+ *     患者健康问卷抑郁自评量表（PHQ-9）的临床应用. 临床精神医学杂志, 24(2), 137-138.
+ *
+ * 计分：4 档 Likert（0-3），总分 0-27
+ * 临床切点（Kroenke 2001）：
+ *   - 0-4: 无抑郁
+ *   - 5-9: 轻度
+ *   - 10-14: 中度
+ *   - 15-19: 中重度
+ *   - 20-27: 重度
+ * 切点 ≥ 10 灵敏度 88%，特异度 88%（对应 MDD 临床诊断）
+ *
+ * ⚠️ 第 9 题为自杀意念警示题：回答 ≥ 1（哪怕只是"好几天"）都触发前端警示。
+ */
+
+import type { Scale } from "../types";
+
+export const phq9: Scale = {
+  id: "phq9",
+  slug: "phq9",
+  name: "PHQ-9 患者健康问卷（抑郁）",
+  description: "抑郁症状的国际通用筛查（9 题，约 3 分钟）",
+  timeFrame: "过去两周",
+  estimatedMinutes: 3,
+  isCore: false,
+  category: "anxiety_clinical",
+  highIsBetter: false,
+  dimensionMaxScore: 27,
+  instructions:
+    "在过去 2 周里，您被以下问题困扰的频率是？请如实选择最贴近您实际状态的选项。",
+  options: [
+    { value: 0, label: "完全没有", short: "没有" },
+    { value: 1, label: "好几天", short: "好几天" },
+    { value: 2, label: "超过一半的天数", short: "过半" },
+    { value: 3, label: "几乎每天", short: "几乎每天" },
+  ],
+  items: [
+    { index: 1, dimension: "DEP", text: "做事提不起劲或没有兴趣", sourceRef: "PHQ-9 #1" },
+    { index: 2, dimension: "DEP", text: "感到心情低落、沮丧或绝望", sourceRef: "PHQ-9 #2" },
+    { index: 3, dimension: "DEP", text: "入睡困难、睡不安稳，或者睡眠过多", sourceRef: "PHQ-9 #3" },
+    { index: 4, dimension: "DEP", text: "感觉疲倦或没有活力", sourceRef: "PHQ-9 #4" },
+    { index: 5, dimension: "DEP", text: "食欲不振，或吃得过多", sourceRef: "PHQ-9 #5" },
+    {
+      index: 6,
+      dimension: "DEP",
+      text: "觉得自己很糟糕，或觉得自己是个失败者，或让自己/家人失望",
+      sourceRef: "PHQ-9 #6",
+    },
+    {
+      index: 7,
+      dimension: "DEP",
+      text: "对事物专注有困难，例如阅读报纸或看电视时",
+      sourceRef: "PHQ-9 #7",
+    },
+    {
+      index: 8,
+      dimension: "DEP",
+      text: "行动或说话缓慢到别人能察觉？或正好相反——烦躁不安、坐立不定，比平常活动得更多",
+      sourceRef: "PHQ-9 #8",
+    },
+    {
+      index: 9,
+      dimension: "DEP",
+      text: "有不如死掉或用某种方式伤害自己的想法",
+      sourceRef: "PHQ-9 #9",
+      flags: ["suicidal_ideation"],
+      flagThreshold: 1, // PHQ-9 临床惯例：≥1（哪怕只是"好几天"）就要警示
+    },
+  ],
+  dimensions: [
+    {
+      code: "DEP",
+      name: "抑郁症状",
+      description: "过去两周内抑郁症状的强度与频率",
+      itemIndices: [1, 2, 3, 4, 5, 6, 7, 8, 9],
+    },
+  ],
+  scoringMethod: "sum",
+  severityBands: {
+    DEP: [
+      {
+        level: "normal",
+        label: "无抑郁",
+        min: 0,
+        max: 4,
+        clientNote: "过去两周的情绪状态在常规范围内。",
+      },
+      {
+        level: "mild",
+        label: "轻度抑郁",
+        min: 5,
+        max: 9,
+        clientNote: "出现一些抑郁信号，建议关注、调整作息与活动。",
+        teacherNote: "心理咨询 / 行为激活适用；监测是否上升。",
+      },
+      {
+        level: "moderate",
+        label: "中度抑郁",
+        min: 10,
+        max: 14,
+        clientNote: "抑郁已较为持续，建议向专业心理工作者咨询。",
+        teacherNote: "建议精神科评估；同时筛 MDQ（双相）后再决定 SSRI。",
+      },
+      {
+        level: "severe",
+        label: "中重度抑郁",
+        min: 15,
+        max: 19,
+        clientNote: "抑郁水平较高，强烈建议尽快寻求专业评估。",
+        teacherNote: "需精神科评估 + 药物 + 心理治疗综合干预，MDQ 必查。",
+      },
+      {
+        level: "extremely_severe",
+        label: "重度抑郁",
+        min: 20,
+        max: 27,
+        clientNote: "请立即联系精神科或心理援助热线。你不必独自承担。",
+        teacherNote: "紧急转介精神科；评估自伤/自杀风险；MDQ 强制筛查；考虑住院评估。",
+      },
+    ],
+  },
+  citation: "Kroenke et al. (2001); Chinese: 胡星辰 et al. (2014)",
+  fullyVerified: false,
+  notes:
+    "第 9 题为自杀意念警示题，回答 ≥ 1 都会触发前端提示。建议跟 GAD-7（焦虑共病）+ MDQ（双相鉴别）一起做。",
+};

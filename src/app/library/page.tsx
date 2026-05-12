@@ -22,14 +22,14 @@ const CATEGORY_ORDER: Array<{
   subKey: UIKey;
 }> = [
   {
-    key: "anxiety_clinical",
-    titleKey: "library_cat_anxiety",
-    subKey: "library_cat_anxiety_sub",
-  },
-  {
     key: "general",
     titleKey: "library_cat_general",
     subKey: "library_cat_general_sub",
+  },
+  {
+    key: "anxiety_clinical",
+    titleKey: "library_cat_anxiety",
+    subKey: "library_cat_anxiety_sub",
   },
 ];
 

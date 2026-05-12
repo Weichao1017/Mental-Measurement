@@ -48,7 +48,7 @@ export const gad7: Scale = {
     { value: 3, label: "几乎每天", labelEn: "Nearly every day", short: "几乎每天", shortEn: "Nearly daily" },
   ],
   items: [
-    { index: 1, dimension: "GAD", text: "感到紧张、焦虑或心里发慌", textEn: "Feeling nervous, anxious, or on edge", sourceRef: "GAD-7 #1" },
+    { index: 1, dimension: "GAD", text: "感到紧张、焦虑或心里发慌", textEn: "Feeling nervous, anxious or on edge", sourceRef: "GAD-7 #1" },
     { index: 2, dimension: "GAD", text: "无法停止或控制担忧", textEn: "Not being able to stop or control worrying", sourceRef: "GAD-7 #2" },
     { index: 3, dimension: "GAD", text: "对各种各样的事情担心过多", textEn: "Worrying too much about different things", sourceRef: "GAD-7 #3" },
     { index: 4, dimension: "GAD", text: "很难放松下来", textEn: "Trouble relaxing", sourceRef: "GAD-7 #4" },

@@ -40,26 +40,28 @@ export const rrs10: Scale = {
   highIsBetter: false,
   dimensionMaxScore: 20,
   instructions:
-    "当你心情低落、悲伤或抑郁时，你做以下事情的频率是多少？请按日常常态作答。",
+    "人们在心情低落、悲伤或抑郁时，会想或做很多不同的事。请如实告诉我，当你感到心情低落、悲伤或抑郁时，你「几乎从不 / 偶尔 / 经常 / 几乎总是」做以下每件事。请按你通常会做什么作答，而不是你认为自己应该做什么。",
   instructionsEn:
-    "When you feel down, sad, or depressed, how often do you do each of the following? Please answer based on your usual patterns.",
+    "People think and do many different things when they feel sad, blue, or depressed. Please tell me if you never, sometimes, often, or always think or do each one when you feel down, sad, or depressed. Please indicate what you generally do, not what you think you should do.",
   options: [
     { value: 1, label: "几乎从不", labelEn: "Almost never", short: "几乎从不", shortEn: "Almost never" },
     { value: 2, label: "偶尔", labelEn: "Sometimes", short: "偶尔", shortEn: "Sometimes" },
     { value: 3, label: "经常", labelEn: "Often", short: "经常", shortEn: "Often" },
     { value: 4, label: "几乎总是", labelEn: "Almost always", short: "几乎总是", shortEn: "Almost always" },
   ],
+  // RRS-10 = Treynor 2003 Table I 中的 10 题（Items 5,7,10,11,12,13,15,16,20,21）
+  // 5 个 brooding (B) + 5 个 reflection (R)，下面顺序：先 B 后 R
   items: [
-    { index: 1, dimension: "BR", text: "反复想：「我为什么对什么都没反应？」", textEn: "Think 'Why do I react this way?'", sourceRef: "RRS Brooding 1" },
-    { index: 2, dimension: "BR", text: "反复想：「我为什么会有这种感觉？」", textEn: "Think 'Why do I always react this way?'", sourceRef: "RRS Brooding 2" },
-    { index: 3, dimension: "BR", text: "想：「如果继续这样下去，我什么都做不成」", textEn: "Think 'I won't be able to do my job if I don't snap out of this'", sourceRef: "RRS Brooding 3" },
-    { index: 4, dimension: "BR", text: "想：「我做错了什么导致这种感觉？」", textEn: "Think 'What am I doing to deserve this?'", sourceRef: "RRS Brooding 4" },
-    { index: 5, dimension: "BR", text: "反复回想最近发生的事，希望它们没有发生过", textEn: "Think about a recent situation, wishing it had gone better", sourceRef: "RRS Brooding 5" },
-    { index: 6, dimension: "RF", text: "一个人静下来思考自己的感受", textEn: "Go someplace alone to think about your feelings", sourceRef: "RRS Reflection 1" },
-    { index: 7, dimension: "RF", text: "写日记或文字，分析自己的想法", textEn: "Write down what you are thinking and analyze it", sourceRef: "RRS Reflection 2" },
-    { index: 8, dimension: "RF", text: "分析最近发生的事，试图理解自己为什么会这样难受", textEn: "Analyze recent events to try to understand why you are depressed", sourceRef: "RRS Reflection 3" },
-    { index: 9, dimension: "RF", text: "一个人离开人群静下来，思考「我为什么会有这种感受」", textEn: "Go away by yourself and think about why you feel this way", sourceRef: "RRS Reflection 4" },
-    { index: 10, dimension: "RF", text: "分析自己的个性，试图理解自己为什么会感到抑郁", textEn: "Analyze your personality to try to understand why you are depressed", sourceRef: "RRS Reflection 5" },
+    { index: 1, dimension: "BR", text: "想：「我做错了什么才会落到这样？」", textEn: "Think \"What am I doing to deserve this?\"", sourceRef: "RRS-22 #5 (B)" },
+    { index: 2, dimension: "BR", text: "想：「我为什么总是这种反应？」", textEn: "Think \"Why do I always react this way?\"", sourceRef: "RRS-22 #10 (B)" },
+    { index: 3, dimension: "BR", text: "回想最近发生的事，希望它本可以更好", textEn: "Think about a recent situation, wishing it had gone better", sourceRef: "RRS-22 #13 (B)" },
+    { index: 4, dimension: "BR", text: "想：「为什么我会有别人没有的问题？」", textEn: "Think \"Why do I have problems other people don't have?\"", sourceRef: "RRS-22 #15 (B)" },
+    { index: 5, dimension: "BR", text: "想：「我为什么处理不好这些事？」", textEn: "Think \"Why can't I handle things better?\"", sourceRef: "RRS-22 #16 (B)" },
+    { index: 6, dimension: "RF", text: "分析最近发生的事，试图理解自己为什么会抑郁", textEn: "Analyze recent events to try to understand why you are depressed", sourceRef: "RRS-22 #7 (R)" },
+    { index: 7, dimension: "RF", text: "一个人离开人群，思考自己为什么会有这种感受", textEn: "Go away by yourself and think about why you feel this way", sourceRef: "RRS-22 #11 (R)" },
+    { index: 8, dimension: "RF", text: "把自己正在想的写下来，并加以分析", textEn: "Write down what you are thinking and analyze it", sourceRef: "RRS-22 #12 (R)" },
+    { index: 9, dimension: "RF", text: "分析自己的个性，试图理解自己为什么会抑郁", textEn: "Analyze your personality to try to understand why you are depressed", sourceRef: "RRS-22 #20 (R)" },
+    { index: 10, dimension: "RF", text: "找个安静的地方一个人思考自己的感受", textEn: "Go someplace alone to think about your feelings", sourceRef: "RRS-22 #21 (R)" },
   ],
   dimensions: [
     { code: "BR", name: "Brooding 沉思/纠结", nameEn: "Brooding", description: "病理性反刍，跟抑郁强相关", descriptionEn: "Pathological rumination, strongly correlated with depression", itemIndices: [1, 2, 3, 4, 5] },

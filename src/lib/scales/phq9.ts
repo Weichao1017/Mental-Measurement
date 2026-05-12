@@ -82,7 +82,7 @@ export const phq9: Scale = {
       index: 9,
       dimension: "DEP",
       text: "有不如死掉或用某种方式伤害自己的想法",
-      textEn: "Thoughts that you would be better off dead, or of hurting yourself in some way",
+      textEn: "Thoughts that you would be better off dead or of hurting yourself in some way",
       sourceRef: "PHQ-9 #9",
       flags: ["suicidal_ideation"],
       flagThreshold: 1, // PHQ-9 临床惯例：≥1 就要警示

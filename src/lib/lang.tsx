@@ -208,6 +208,30 @@ export const UI = {
     en: "All scales are publicly published, peer-validated psychological assessment tools. The 'Translation in review' tag means the Chinese version is AI-translated and not yet aligned with authoritative Chinese revisions; the English version is the original.",
   },
 
+  // /start/ 套餐启动页
+  start_eyebrow: { zh: "Battery", en: "Battery" },
+  start_title: { zh: "准备开始评估", en: "Ready to begin" },
+  start_intro_prefix: { zh: "下面这套评估包含 ", en: "This battery contains " },
+  start_intro_scales_unit: { zh: " 个量表", en: " scales" },
+  start_intro_items_unit: { zh: " 题", en: " items" },
+  start_intro_minutes_prefix: { zh: "预计 ", en: "estimated " },
+  start_intro_minutes_unit: { zh: " 分钟", en: " min" },
+  start_begin: { zh: "开始评估", en: "Begin Assessment" },
+  start_share: { zh: "复制链接 / 二维码", en: "Copy link / QR" },
+  start_share_title: {
+    zh: "把这份套餐发给朋友 / 来访者",
+    en: "Share this battery with a friend or client",
+  },
+  start_share_desc: {
+    zh: "复制上方「复制链接 / 二维码」生成的链接，对方打开后会看到完全一样的量表清单，点开始即可作答。链接本身不带任何答题数据，他们的作答只保存在自己的设备上。",
+    en: "Copy the link from the button above. When they open it, they'll see the exact same battery and can start. The link contains no answer data — their responses stay on their own device.",
+  },
+  start_empty: {
+    zh: "这个链接没有指定要做哪些量表。",
+    en: "This link doesn't specify any scales.",
+  },
+  start_to_library: { zh: "去题库选择", en: "Go to Library" },
+
   // ScaleRunner
   runner_section_completed: { zh: "已答", en: "Answered" },
   runner_section_total_sep: { zh: " / ", en: " / " },

@@ -54,8 +54,9 @@ export default function LibraryPage() {
   const startBatch = () => {
     const ids = Array.from(selected);
     if (ids.length === 0) return;
-    newSession(ids, []);
-    router.push(`/assessment/${ids[0]}/`);
+    // 跳到 /start/?b=... — URL 本身可分享给朋友 / 来访者
+    // 用户在 /start/ 页面看预览后点"开始"才真正 init session
+    router.push(`/start/?b=${encodeURIComponent(ids.join(","))}`);
   };
 
   // 按 category 分组（默认 category = "general"）

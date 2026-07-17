@@ -424,6 +424,16 @@ export const UI = {
     zh: "提示：链接包含你在问卷里的全部回答，请只发给本次家庭沙龙的主持人。链接较长属正常现象；二维码能生成时扫描更方便，否则直接复制链接发送即可。",
     en: "Note: The link contains all your questionnaire responses. Only share it with your family-salon host. The length is normal — scan the QR code when it's available, otherwise just copy and send the link.",
   },
+  // taker = 被邀请去「作答」的来访者/朋友（/start 页分享的是空白邀请链接，不含任何答案）
+  share_title_taker: { zh: "邀请对方作答的链接", en: "Link to Invite Someone" },
+  share_intro_taker: {
+    zh: "把下面的二维码或链接发给你想邀请的人。对方打开后会看到同样的题目，点「开始」即可作答。这个链接只是邀请，不包含任何答案。",
+    en: "Send the QR code or link below to whoever you'd like to invite. When they open it they'll see the same questions and can tap Start to begin. This link is only an invitation — it contains no answers.",
+  },
+  share_warning_taker: {
+    zh: "提示：这个链接只是邀请对方作答，不含任何答题数据；对方的作答只保存在他们自己的设备上。链接较长属正常现象，二维码扫描更方便。",
+    en: "Note: This link only invites someone to respond — it carries no answer data, and their responses stay only on their own device. The length is normal; scanning the QR code is more convenient.",
+  },
 
   // ClinicalFlag
   cf_eyebrow: { zh: "综合建议", en: "Integrated Recommendation" },

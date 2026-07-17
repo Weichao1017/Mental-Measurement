@@ -162,6 +162,7 @@ function StartContent() {
           url={shareUrl}
           open={shareOpen}
           onClose={() => setShareOpen(false)}
+          audience="taker"
         />
       </div>
     </Container>

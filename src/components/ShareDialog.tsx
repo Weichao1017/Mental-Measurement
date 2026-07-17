@@ -8,13 +8,24 @@ interface Props {
   url: string;
   open: boolean;
   onClose: () => void;
-  /** 接收方语气：默认给疗愈师看；收集型问卷给家庭沙龙主持人看 */
-  audience?: "therapist" | "host";
+  /**
+   * 接收方角色，决定弹窗文案：
+   *  - therapist：/results 分享「含答案」的解读链接给疗愈师（默认）
+   *  - host：收集型问卷把「含回答」的链接交给家庭沙龙主持人
+   *  - taker：/start 把「空白邀请链接」（不含任何答案）发给来访者去作答
+   */
+  audience?: "therapist" | "host" | "taker";
 }
+
+const AUDIENCE_KEYS = {
+  therapist: { title: "share_title", intro: "share_intro", warning: "share_warning" },
+  host: { title: "share_title_host", intro: "share_intro_host", warning: "share_warning_host" },
+  taker: { title: "share_title_taker", intro: "share_intro_taker", warning: "share_warning_taker" },
+} as const;
 
 export default function ShareDialog({ url, open, onClose, audience = "therapist" }: Props) {
   const t = useT();
-  const isHost = audience === "host";
+  const k = AUDIENCE_KEYS[audience];
   const [qrSvg, setQrSvg] = useState<string | null>(null);
   const [copied, setCopied] = useState(false);
   const [qrFailed, setQrFailed] = useState(false);
@@ -97,11 +108,9 @@ export default function ShareDialog({ url, open, onClose, audience = "therapist"
         </button>
 
         <div className="p-6 sm:p-8">
-          <h2 className="mb-2 font-serif text-xl text-ink">
-            {t(isHost ? "share_title_host" : "share_title")}
-          </h2>
+          <h2 className="mb-2 font-serif text-xl text-ink">{t(k.title)}</h2>
           <p className="mb-6 text-sm leading-relaxed text-brand-600">
-            {t(isHost ? "share_intro_host" : "share_intro")}
+            {t(k.intro)}
           </p>
 
           <div className="mb-6 flex items-center justify-center rounded-xl bg-cream p-4">
@@ -144,7 +153,7 @@ export default function ShareDialog({ url, open, onClose, audience = "therapist"
           </div>
 
           <p className="text-xs leading-relaxed text-brand-400">
-            {t(isHost ? "share_warning_host" : "share_warning")}
+            {t(k.warning)}
           </p>
         </div>
       </div>

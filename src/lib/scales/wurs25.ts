@@ -40,6 +40,9 @@ export const wurs25: Scale = {
   isCore: false,
   category: "anxiety_clinical",
   highIsBetter: false,
+  // 童年 ADHD 回顾（retrospective），非当下临床状态、非用药通路；
+  // 不进通用「临床综合判定」，仅作 ADHD 证据链的一环（阳性=童年症状证据）。
+  excludeFromClinicalFlag: true,
   dimensionMaxScore: 100,
   instructions:
     "请回想你 8-10 岁左右的童年时期。下面每一项描述你当时的情况符合多少？请如实选择，没有标准答案。",

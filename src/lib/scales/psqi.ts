@@ -166,6 +166,9 @@ export const psqi: Scale = {
   estimatedMinutes: 4,
   isCore: false,
   highIsBetter: false,
+  // 简化版、非临床加权（见 psqiCaveat 判定盒）；失眠首选 CBT-I / 睡眠卫生，非 SSRI/精神科通路。
+  // 不进通用「临床综合判定」，避免从"非临床参考"分数推导医学建议。
+  excludeFromClinicalFlag: true,
   // 不设 dimensionMaxScore：PSQI 各维度题数不一致（C1=1 题, C5=10 题），
   // 用统一最大分会让 "2 / 54" 跟 band "困扰较多" 视觉矛盾。
   // ResultCard 已优雅 fallback：不传则不显示分母。

@@ -17,6 +17,8 @@ import { rrs10 } from "./rrs10";
 import { asrs } from "./asrs";
 import { aci } from "./aci";
 import { wurs25 } from "./wurs25";
+// 活动 · 沙龙问卷（纯收集型，无计分）
+import { salonWarmup } from "./salon-warmup";
 import type { Concern, Scale } from "../types";
 
 export const SCALES: Record<string, Scale> = {
@@ -37,6 +39,7 @@ export const SCALES: Record<string, Scale> = {
   asrs,
   aci,
   wurs25,
+  "salon-warmup": salonWarmup,
 };
 
 /** 默认核心套装：所有人必做的最少集合 */

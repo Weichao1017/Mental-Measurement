@@ -34,11 +34,20 @@ export interface SharePayload {
   b: string[];
   /** 答案：{ scaleId: [按 item.index 升序排列的 value 数组]，未答用 -1 } */
   a: Record<string, number[]>;
+  /**
+   * 文本题 / 自由补充答案（收集型问卷用）：{ scaleId: { itemIndex: 文本 } }。
+   * 可选字段：旧版链接没有它也能正常解码（版本号保持 1）。
+   */
+  x?: Record<string, Record<number, string>>;
+  /** 多选题答案（收集型问卷用）：{ scaleId: { itemIndex: 选中值数组 } } */
+  m?: Record<string, Record<number, number[]>>;
 }
 
 /** 把 SessionState 编码成 base64url 字符串 */
 export function encodeSession(session: SessionState): string {
   const a: Record<string, number[]> = {};
+  const x: Record<string, Record<number, string>> = {};
+  const m: Record<string, Record<number, number[]>> = {};
   for (const scaleId of session.battery) {
     const scale = getScale(scaleId);
     const response = session.responses[scaleId];
@@ -49,6 +58,17 @@ export function encodeSession(session: SessionState): string {
       const v = response.answers[it.index];
       return typeof v === "number" ? v : -1;
     });
+    // 文本 / 多选答案（收集型问卷）：只带非空项
+    for (const it of sortedItems) {
+      const txt = response.textAnswers?.[it.index];
+      if (typeof txt === "string" && txt.trim() !== "") {
+        (x[scaleId] ??= {})[it.index] = txt;
+      }
+      const mv = response.multiAnswers?.[it.index];
+      if (Array.isArray(mv) && mv.length > 0) {
+        (m[scaleId] ??= {})[it.index] = mv;
+      }
+    }
   }
 
   const payload: SharePayload = {
@@ -57,6 +77,8 @@ export function encodeSession(session: SessionState): string {
     c: session.concerns,
     b: session.battery,
     a,
+    ...(Object.keys(x).length > 0 ? { x } : {}),
+    ...(Object.keys(m).length > 0 ? { m } : {}),
   };
 
   const json = JSON.stringify(payload);
@@ -74,6 +96,9 @@ export function decodePayload(encoded: string): SharePayload | null {
     if (!Array.isArray(obj.c)) return null;
     if (!Array.isArray(obj.b)) return null;
     if (!obj.a || typeof obj.a !== "object") return null;
+    // x / m 是可选扩展字段：形状不对就丢弃，不让整个链接失效
+    if (obj.x !== undefined && (typeof obj.x !== "object" || obj.x === null)) delete obj.x;
+    if (obj.m !== undefined && (typeof obj.m !== "object" || obj.m === null)) delete obj.m;
     return obj as SharePayload;
   } catch {
     return null;
@@ -96,7 +121,30 @@ export function payloadToResponses(
       const v = arr[i];
       if (typeof v === "number" && v >= 0) answers[it.index] = v;
     });
-    responses[scaleId] = { scaleId, answers };
+    const response: ScaleResponse = { scaleId, answers };
+    // 还原文本 / 多选答案（JSON 对象键是字符串，转回 number 键）
+    const xMap = payload.x?.[scaleId];
+    if (xMap && typeof xMap === "object") {
+      const textAnswers: Record<number, string> = {};
+      for (const [k, v] of Object.entries(xMap)) {
+        const idx = Number(k);
+        if (Number.isFinite(idx) && typeof v === "string") textAnswers[idx] = v;
+      }
+      if (Object.keys(textAnswers).length > 0) response.textAnswers = textAnswers;
+    }
+    const mMap = payload.m?.[scaleId];
+    if (mMap && typeof mMap === "object") {
+      const multiAnswers: Record<number, number[]> = {};
+      for (const [k, v] of Object.entries(mMap)) {
+        const idx = Number(k);
+        if (Number.isFinite(idx) && Array.isArray(v)) {
+          const vals = v.filter((n): n is number => typeof n === "number");
+          if (vals.length > 0) multiAnswers[idx] = vals;
+        }
+      }
+      if (Object.keys(multiAnswers).length > 0) response.multiAnswers = multiAnswers;
+    }
+    responses[scaleId] = response;
   }
   return responses;
 }

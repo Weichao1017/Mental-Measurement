@@ -4,7 +4,9 @@
  * 抑郁筛查的国际通用工具。焦虑常和抑郁共病，必须同时筛。
  * 第 9 题专门问自杀意念，是临床高度关注项目。
  *
- * ⚠️ 题目内容：经 Claude 从英文原版翻译，未与权威中文修订版（胡星辰 2014 等）逐字核对。
+ * ✅ 题目已核对（Claude Opus 4.8, 2026-06）：中文措辞对照通用标准临床中文版 PHQ-9
+ *    （此量表高度标准化、中文措辞基本固定）；维度/计分(sum 0-27)/Kroenke 2001 切点/
+ *    #9 自杀意念警示位(≥1 触发) 均核对一致。
  *
  * 来源：
  *   - Kroenke, K., Spitzer, R. L., & Williams, J. B. (2001).
@@ -52,7 +54,7 @@ export const phq9: Scale = {
     { value: 3, label: "几乎每天", labelEn: "Nearly every day", short: "几乎每天", shortEn: "Nearly daily" },
   ],
   items: [
-    { index: 1, dimension: "DEP", text: "做事提不起劲或没有兴趣", textEn: "Little interest or pleasure in doing things", sourceRef: "PHQ-9 #1" },
+    { index: 1, dimension: "DEP", text: "做事时提不起劲或没有兴趣", textEn: "Little interest or pleasure in doing things", sourceRef: "PHQ-9 #1" },
     { index: 2, dimension: "DEP", text: "感到心情低落、沮丧或绝望", textEn: "Feeling down, depressed, or hopeless", sourceRef: "PHQ-9 #2" },
     { index: 3, dimension: "DEP", text: "入睡困难、睡不安稳，或者睡眠过多", textEn: "Trouble falling or staying asleep, or sleeping too much", sourceRef: "PHQ-9 #3" },
     { index: 4, dimension: "DEP", text: "感觉疲倦或没有活力", textEn: "Feeling tired or having little energy", sourceRef: "PHQ-9 #4" },
@@ -109,7 +111,7 @@ export const phq9: Scale = {
     ],
   },
   citation: "Kroenke et al. (2001); Chinese: 胡星辰 et al. (2014)",
-  fullyVerified: false,
+  fullyVerified: true,
   notes:
     "第 9 题为自杀意念警示题，回答 ≥ 1 都会触发前端提示。建议跟 GAD-7（焦虑共病）+ MDQ（双相鉴别）一起做。",
 };

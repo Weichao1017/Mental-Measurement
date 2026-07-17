@@ -184,6 +184,16 @@ export const UI = {
     zh: "情绪症状、幸福感、正念能力、自我关怀、身体觉察、情绪调节、睡眠、依恋等",
     en: "Emotional symptoms, wellbeing, mindfulness, self-compassion, body awareness, emotion regulation, sleep, attachment, etc.",
   },
+  library_cat_salon: {
+    zh: "活动 · 沙龙问卷",
+    en: "Workshops & Salons",
+  },
+  library_cat_salon_sub: {
+    zh: "配合线下沙龙 / 工作坊使用的收集型问卷——不打分，回答通过链接交给主持人",
+    en: "Collection questionnaires for offline salons / workshops — unscored; responses go to the host via a share link",
+  },
+  library_card_type: { zh: "类型：", en: "Type: " },
+  library_type_survey: { zh: "问卷收集（无计分）", en: "survey (unscored)" },
   library_selected_count: { zh: "已选", en: "Selected" },
   library_scales_unit: { zh: "个量表", en: "scales" },
   library_items_unit: { zh: "题", en: "items" },
@@ -247,14 +257,22 @@ export const UI = {
     zh: "所有题目答完才能进入下一个量表",
     en: "All items must be answered to proceed to the next scale",
   },
+  runner_remaining_note_survey: {
+    zh: "带「选答」标记的题可以跳过，必答题都答完即可提交",
+    en: "Items marked 'Optional' can be skipped; submit once all required items are answered",
+  },
   runner_jump_unanswered: {
     zh: "跳到下一道未答的题",
     en: "Jump to next unanswered",
   },
 
-  // QuestionCard
+  // QuestionCard / SurveyQuestionCard
   q_position_prefix: { zh: "第 ", en: "Q" },
   q_position_suffix: { zh: " 题", en: "" },
+  q_optional_badge: { zh: "选答", en: "Optional" },
+  q_multi_hint: { zh: "可多选", en: "Select all that apply" },
+  q_number_hint: { zh: "填一个数字", en: "Enter a number" },
+  q_text_placeholder: { zh: "写在这里…", en: "Write here…" },
   q_dim_hidden: { zh: "维度已隐藏", en: "Dimension hidden" },
   q_slider_hint: { zh: "拖动滑块选择程度", en: "Drag slider to choose" },
   q_warning_title: {
@@ -273,6 +291,10 @@ export const UI = {
     zh: "这是你各个维度此刻的状态。结果只是一张「快照」，不代表你这个人。和老师交流时，可以把这份结果作为对话的起点。",
     en: "Here's a snapshot of where each dimension stands. The result is just a snapshot, not your identity. When talking with your therapist, this can serve as the starting point of the conversation.",
   },
+  results_intro_survey: {
+    zh: "以下是你在这份问卷里的全部回答。它不打分，只是把你此刻的想法收集起来，作为家庭沙龙里对话的起点。确认无误后，可以把回答交给本次的主持人。",
+    en: "Below are all your responses to this questionnaire. It isn't scored — it simply gathers where you are right now, as a starting point for the family salon. Once they look right, you can send them to the host.",
+  },
   results_no_data: { zh: "还没有评估数据。", en: "No assessment data yet." },
   results_start: { zh: "开始评估", en: "Start Assessment" },
   results_hotline_title: { zh: "危机干预热线", en: "Crisis Hotlines" },
@@ -289,6 +311,15 @@ export const UI = {
     zh: "生成给老师的链接 / 二维码",
     en: "Generate Link / QR Code for Therapist",
   },
+  results_share_title_survey: { zh: "把回答交给主持人", en: "Share with the Host" },
+  results_share_desc_survey: {
+    zh: "生成一个二维码或链接，给本次家庭沙龙的主持人扫描或打开。主持人会看到你逐题的原始回答，方便沙龙里一起讨论。回答完全包含在链接里，没有上传任何服务器。",
+    en: "Generate a QR code or link for the family-salon host to scan or open. They'll see your per-item responses as you wrote them — useful for discussion during the salon. Your responses are fully contained in the link; nothing is uploaded to any server.",
+  },
+  results_share_btn_survey: {
+    zh: "生成给主持人的链接 / 二维码",
+    en: "Generate Link / QR Code for the Host",
+  },
   results_restart: { zh: "清空并重新开始", en: "Clear and Restart" },
   results_copy_title: {
     zh: "复制完整结果（含切点表 + AI 分析）",
@@ -297,6 +328,14 @@ export const UI = {
   results_copy_desc: {
     zh: "一键把全部量表分数、完整切点表、综合建议和 AI 分析复制为 Markdown 文本，方便粘贴到聊天工具 / 邮件 / 文档里发给医生或自己存档。",
     en: "Copy all scale scores, full cutoff tables, integrated recommendation, and AI analysis as Markdown — easy to paste into chat / email / document for a clinician or your own records.",
+  },
+  results_copy_title_survey: {
+    zh: "复制全部回答",
+    en: "Copy All Responses",
+  },
+  results_copy_desc_survey: {
+    zh: "一键把你逐题的原始回答复制为 Markdown 文本，方便粘贴到聊天工具 / 文档里发给主持人或自己留存。",
+    en: "Copy your per-item responses as Markdown — easy to paste into chat / a document to send to the host or keep for yourself.",
   },
   results_copy_btn: { zh: "复制全部结果", en: "Copy Full Results" },
   results_copy_done: { zh: "已复制", en: "Copied" },
@@ -309,6 +348,17 @@ export const UI = {
     zh: "本评估基于公开发表的心理量表改编整理，结果仅供自我了解和与老师的工作参考，不构成任何临床诊断。如果你或你身边的人出现持续的低落、强烈的无望感或自伤想法，请尽快联系专业心理科 / 精神科，或拨打上述危机干预热线。",
     en: "This assessment is adapted from publicly published psychological scales. Results are for self-understanding and therapist reference only, and do not constitute any clinical diagnosis. If you or someone close to you experiences persistent low mood, strong hopelessness, or self-harm thoughts, please contact a psychiatry / psychology service or call one of the hotlines above as soon as possible.",
   },
+
+  // SurveyAnswersCard（收集型问卷的逐题回顾）
+  survey_done_title: { zh: "回答已收好", en: "Responses recorded" },
+  survey_done_desc: {
+    zh: "这份问卷不打分。下面是你的全部回答，确认无误后，用下方「生成链接 / 二维码」把它交给主持人。",
+    en: "This questionnaire isn't scored. Below are all your responses — once they look right, use the share button below to send them to the host.",
+  },
+  survey_unanswered: { zh: "未作答", en: "Not answered" },
+  survey_extra_note: { zh: "补充", en: "Note" },
+  survey_items_unit: { zh: "题", en: "items" },
+  survey_answered_label: { zh: "已答", en: "Answered" },
 
   // ResultCard / Therapist
   rc_band_pending: { zh: "题库待核对", en: "Translation in review" },
@@ -349,6 +399,15 @@ export const UI = {
     zh: "把下面的二维码或链接交给老师，老师在浏览器打开后可以看到完整的解读视图。数据完全包含在链接里，没有上传到任何服务器。",
     en: "Share the QR code or link below with your therapist. When they open it in a browser, they'll see the full interpretation view. Data is fully contained in the link; nothing is uploaded to any server.",
   },
+  share_title_host: { zh: "给主持人看的链接", en: "Host Link" },
+  share_intro_host: {
+    zh: "把下面的二维码或链接交给本次家庭沙龙的主持人，主持人在浏览器打开后可以看到你的全部回答。数据完全包含在链接里，没有上传到任何服务器。",
+    en: "Share the QR code or link below with the family-salon host. When they open it in a browser, they'll see all your responses. Data is fully contained in the link; nothing is uploaded to any server.",
+  },
+  share_qr_fail: {
+    zh: "内容较多，二维码无法生成。请改用下方链接复制发送。",
+    en: "There's too much content to fit in a QR code. Please copy and send the link below instead.",
+  },
   share_qr_loading: { zh: "正在生成二维码…", en: "Generating QR code…" },
   share_url_label: { zh: "链接", en: "Link" },
   share_copy: { zh: "复制", en: "Copy" },
@@ -360,6 +419,10 @@ export const UI = {
   share_warning: {
     zh: "提示：链接包含本次评估的全部答案，请只发给信任的疗愈师 / 心理工作者。链接较长属正常现象，二维码扫描更方便。",
     en: "Note: The link contains all your assessment answers. Only share with a trusted therapist. The length is normal — scanning the QR code is more convenient.",
+  },
+  share_warning_host: {
+    zh: "提示：链接包含你在问卷里的全部回答，请只发给本次家庭沙龙的主持人。链接较长属正常现象；二维码能生成时扫描更方便，否则直接复制链接发送即可。",
+    en: "Note: The link contains all your questionnaire responses. Only share it with your family-salon host. The length is normal — scan the QR code when it's available, otherwise just copy and send the link.",
   },
 
   // ClinicalFlag

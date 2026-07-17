@@ -8,19 +8,22 @@ interface Props {
   url: string;
   open: boolean;
   onClose: () => void;
+  /** 接收方语气：默认给疗愈师看；收集型问卷给家庭沙龙主持人看 */
+  audience?: "therapist" | "host";
 }
 
-export default function ShareDialog({ url, open, onClose }: Props) {
+export default function ShareDialog({ url, open, onClose, audience = "therapist" }: Props) {
   const t = useT();
+  const isHost = audience === "host";
   const [qrSvg, setQrSvg] = useState<string | null>(null);
   const [copied, setCopied] = useState(false);
-  const [qrError, setQrError] = useState<string | null>(null);
+  const [qrFailed, setQrFailed] = useState(false);
 
   // 懒加载 qrcode 库，避免在主 bundle 里
   useEffect(() => {
     if (!open) return;
     setQrSvg(null);
-    setQrError(null);
+    setQrFailed(false);
     let cancelled = false;
     import("qrcode")
       .then((QRCode) =>
@@ -35,10 +38,10 @@ export default function ShareDialog({ url, open, onClose }: Props) {
       .then((svg) => {
         if (!cancelled) setQrSvg(svg);
       })
-      .catch((err: unknown) => {
-        if (!cancelled) {
-          setQrError(err instanceof Error ? err.message : "二维码生成失败");
-        }
+      .catch(() => {
+        // 常见失败：答案文本过长撑爆二维码容量。标记失败，改由 JSX 渲染中文提示
+        // 并引导用户改用下方链接，不把库的英文原始报错直接抛给用户。
+        if (!cancelled) setQrFailed(true);
       });
     return () => {
       cancelled = true;
@@ -94,14 +97,18 @@ export default function ShareDialog({ url, open, onClose }: Props) {
         </button>
 
         <div className="p-6 sm:p-8">
-          <h2 className="mb-2 font-serif text-xl text-ink">{t("share_title")}</h2>
+          <h2 className="mb-2 font-serif text-xl text-ink">
+            {t(isHost ? "share_title_host" : "share_title")}
+          </h2>
           <p className="mb-6 text-sm leading-relaxed text-brand-600">
-            {t("share_intro")}
+            {t(isHost ? "share_intro_host" : "share_intro")}
           </p>
 
           <div className="mb-6 flex items-center justify-center rounded-xl bg-cream p-4">
-            {qrError ? (
-              <p className="py-12 text-sm text-rose-700">{qrError}</p>
+            {qrFailed ? (
+              <p className="py-12 text-center text-sm leading-relaxed text-rose-700">
+                {t("share_qr_fail")}
+              </p>
             ) : qrSvg ? (
               <div
                 className="h-[280px] w-[280px]"
@@ -137,7 +144,7 @@ export default function ShareDialog({ url, open, onClose }: Props) {
           </div>
 
           <p className="text-xs leading-relaxed text-brand-400">
-            {t("share_warning")}
+            {t(isHost ? "share_warning_host" : "share_warning")}
           </p>
         </div>
       </div>

@@ -7,6 +7,7 @@ import ResultCard from "@/components/ResultCard";
 import ShareDialog from "@/components/ShareDialog";
 import AIAnalysisCard from "@/components/AIAnalysisCard";
 import ClinicalFlagCard from "@/components/ClinicalFlagCard";
+import SurveyAnswersCard from "@/components/SurveyAnswersCard";
 import { getScale } from "@/lib/scales";
 import { scoreScale } from "@/lib/scoring";
 import { loadSession, clearSession } from "@/lib/store";
@@ -54,13 +55,32 @@ export default function ResultsPage() {
     return out;
   }, [session]);
 
+  // 收集型问卷（isSurvey）不计分：走逐题回顾；临床判定 / AI 分析只吃计分量表
+  const scoredResults = useMemo(
+    () => results.filter((r) => !r.scale.isSurvey),
+    [results]
+  );
+  const surveyResults = useMemo(
+    () => results.filter((r) => r.scale.isSurvey),
+    [results]
+  );
+
+  // AI 分析用的 session：把问卷从 battery 里剔除，避免文本回答（含个人信息）被编码进 AI 请求
+  const aiSession = useMemo<SessionState | null>(() => {
+    if (!session) return null;
+    return {
+      ...session,
+      battery: session.battery.filter((id) => !getScale(id)?.isSurvey),
+    };
+  }, [session]);
+
   const clinicalFlag = useMemo(() => {
-    if (results.length === 0) return null;
+    if (scoredResults.length === 0) return null;
     return computeClinicalFlag(
-      results.map((r) => ({ scale: r.scale, result: r.result })),
+      scoredResults.map((r) => ({ scale: r.scale, result: r.result })),
       lang
     );
-  }, [results, lang]);
+  }, [scoredResults, lang]);
 
   if (!session) {
     return (
@@ -76,6 +96,9 @@ export default function ResultsPage() {
   }
 
   const anyWarnings = results.some((r) => r.result.warnings.length > 0);
+  // 纯问卷会话：没有任何计分量表，只有收集型问卷。此时复制/分享卡不应沿用
+  // 「切点表 / AI 分析 / 交给老师」等计分语境文案。
+  const surveyOnly = scoredResults.length === 0 && surveyResults.length > 0;
 
   return (
     <Container size="lg">
@@ -87,7 +110,7 @@ export default function ResultsPage() {
           {t("results_title")}
         </h1>
         <p className="mb-8 max-w-prose leading-relaxed text-brand-700">
-          {t("results_intro")}
+          {t(surveyOnly ? "results_intro_survey" : "results_intro")}
         </p>
 
         {clinicalFlag ? <ClinicalFlagCard flag={clinicalFlag} /> : null}
@@ -129,26 +152,53 @@ export default function ResultsPage() {
         ) : null}
 
         <div className="space-y-6">
-          {results.map(({ scaleId, result }) => {
+          {scoredResults.map(({ scaleId, result }) => {
             const scale = getScale(scaleId)!;
             return <ResultCard key={scaleId} scale={scale} result={result} />;
           })}
         </div>
 
-        <AIAnalysisCard
-          session={session}
-          results={results.map((r) => ({ scale: r.scale, result: r.result }))}
-          clinicalFlag={clinicalFlag}
-          onTextChange={setAiText}
-        />
+        {/* 收集型问卷：提交确认 + 逐题回顾 */}
+        {surveyResults.length > 0 ? (
+          <div className={scoredResults.length > 0 ? "mt-6 space-y-6" : "space-y-6"}>
+            <div className="rounded-2xl border border-sage-200 bg-sage-50 p-6">
+              <h2 className="mb-2 font-serif text-lg text-ink">
+                {t("survey_done_title")}
+              </h2>
+              <p className="text-sm leading-relaxed text-brand-700">
+                {t("survey_done_desc")}
+              </p>
+            </div>
+            {surveyResults.map(({ scaleId, scale }) => {
+              const response = session.responses[scaleId];
+              if (!response) return null;
+              return (
+                <SurveyAnswersCard
+                  key={scaleId}
+                  scale={scale}
+                  response={response}
+                />
+              );
+            })}
+          </div>
+        ) : null}
+
+        {scoredResults.length > 0 && aiSession ? (
+          <AIAnalysisCard
+            session={aiSession}
+            results={scoredResults.map((r) => ({ scale: r.scale, result: r.result }))}
+            clinicalFlag={clinicalFlag}
+            onTextChange={setAiText}
+          />
+        ) : null}
 
         {/* 一键复制全部结果 */}
         <div className="mt-8 rounded-2xl border border-brand-200 bg-white p-6">
           <h2 className="mb-2 font-serif text-lg text-ink">
-            {t("results_copy_title")}
+            {t(surveyOnly ? "results_copy_title_survey" : "results_copy_title")}
           </h2>
           <p className="mb-4 text-sm leading-relaxed text-brand-700">
-            {t("results_copy_desc")}
+            {t(surveyOnly ? "results_copy_desc_survey" : "results_copy_desc")}
           </p>
           <button
             type="button"
@@ -176,10 +226,10 @@ export default function ResultsPage() {
 
         <div className="mt-10 rounded-2xl border border-sage-200 bg-sage-50 p-6">
           <h2 className="mb-2 font-serif text-lg text-ink">
-            {t("results_share_title")}
+            {t(surveyOnly ? "results_share_title_survey" : "results_share_title")}
           </h2>
           <p className="mb-4 text-sm leading-relaxed text-brand-700">
-            {t("results_share_desc")}
+            {t(surveyOnly ? "results_share_desc_survey" : "results_share_desc")}
           </p>
           <button
             type="button"
@@ -187,7 +237,7 @@ export default function ResultsPage() {
             onClick={() => setShareOpen(true)}
             disabled={!shareUrl}
           >
-            {t("results_share_btn")}
+            {t(surveyOnly ? "results_share_btn_survey" : "results_share_btn")}
           </button>
         </div>
 
@@ -208,6 +258,7 @@ export default function ResultsPage() {
           url={shareUrl}
           open={shareOpen}
           onClose={() => setShareOpen(false)}
+          audience={surveyOnly ? "host" : "therapist"}
         />
 
 
@@ -274,6 +325,51 @@ function buildClipboardMarkdown(args: {
       lines.push(`> ${lang === "en" ? "Citation" : "引用"}: ${scale.citation}`);
     }
     lines.push("");
+
+    // 收集型问卷：逐题列出原始回答（无计分）
+    if (scale.isSurvey) {
+      const response = session.responses[scale.id];
+      const items = [...scale.items].sort((a, b) => a.index - b.index);
+      items.forEach((item, idx) => {
+        const q = pick(item.text, item.textEn, lang);
+        lines.push(`**${idx + 1}. ${q}**`);
+        const kind = item.inputType ?? "choice";
+        const options = item.options ?? scale.options;
+        if (kind === "text") {
+          const v = response?.textAnswers?.[item.index];
+          lines.push(v && v.trim() !== "" ? v : lang === "en" ? "_(not answered)_" : "_（未作答）_");
+        } else if (kind === "multi") {
+          const vals = response?.multiAnswers?.[item.index] ?? [];
+          if (vals.length === 0) {
+            lines.push(lang === "en" ? "_(not answered)_" : "_（未作答）_");
+          } else {
+            for (const v of vals) {
+              const opt = options.find((o) => o.value === v);
+              lines.push(`- ${opt ? pick(opt.label, opt.labelEn, lang) : v}`);
+            }
+          }
+        } else {
+          const raw = response?.answers?.[item.index];
+          if (typeof raw !== "number") {
+            lines.push(lang === "en" ? "_(not answered)_" : "_（未作答）_");
+          } else if (kind === "number") {
+            lines.push(`${raw}${item.unit ?? ""}`);
+          } else {
+            const opt = options.find((o) => o.value === raw);
+            lines.push(opt ? pick(opt.label, opt.labelEn, lang) : String(raw));
+          }
+        }
+        // choice/multi 的自由补充
+        if (kind !== "text") {
+          const extra = response?.textAnswers?.[item.index];
+          if (extra && extra.trim() !== "") {
+            lines.push(`> ${lang === "en" ? "Note" : "补充"}: ${extra}`);
+          }
+        }
+        lines.push("");
+      });
+      continue;
+    }
 
     for (const d of result.dimensions) {
       const dimInfo = scale.dimensions.find((x) => x.code === d.code);

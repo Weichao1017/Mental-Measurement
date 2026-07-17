@@ -133,7 +133,7 @@ export const dersSf: Scale = {
     {
       index: 12,
       dimension: "GOA",
-      text: "心烦的时候，我难以专注于其他事情。",
+      text: "心烦的时候，我很难集中注意力。",
       sourceRef: "DERS-36 #26",
     },
     // AWA Awareness (3 题, 反向 — 题目正向措辞)

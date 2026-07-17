@@ -3,7 +3,8 @@
  *
  * 焦虑领域的金标准筛查工具。约 2 分钟做完。
  *
- * ⚠️ 题目内容：经 Claude 从英文原版翻译，未与权威中文修订版（何筱衍 2010 / Spitzer 2006 中文版）逐字核对。
+ * ✅ 题目已核对（Claude Opus 4.8, 2026-06）：中文措辞对照通用标准临床中文版 GAD-7
+ *    （此量表高度标准化、中文措辞基本固定）；维度/计分(sum 0-21)/Spitzer 2006 切点 均核对一致。
  *
  * 来源：
  *   - Spitzer, R. L., Kroenke, K., Williams, J. B. W., & Löwe, B. (2006).
@@ -108,7 +109,7 @@ export const gad7: Scale = {
     ],
   },
   citation: "Spitzer et al. (2006); Chinese: 何筱衍 et al. (2010)",
-  fullyVerified: false,
+  fullyVerified: true,
   notes:
     "焦虑筛查金标准。≥10 分对应中度以上焦虑，建议同时做 PHQ-9（抑郁共病筛查）和 MDQ（双相筛查，SSRI 处方前必查）。",
 };

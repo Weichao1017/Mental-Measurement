@@ -1,10 +1,32 @@
 import type {
   Scale,
+  ScaleItem,
   ScaleResponse,
   ScaleResult,
   DimensionScore,
   SeverityBand,
 } from "./types";
+
+/**
+ * 一道题是否已作答（按题型分别看三个答案存储）。
+ * 标准量表条目（无 inputType）走 choice 分支，行为与旧逻辑完全一致。
+ */
+export function isItemAnswered(item: ScaleItem, response: ScaleResponse): boolean {
+  const kind = item.inputType ?? "choice";
+  if (kind === "text") {
+    const v = response.textAnswers?.[item.index];
+    return typeof v === "string" && v.trim() !== "";
+  }
+  if (kind === "multi") {
+    return (response.multiAnswers?.[item.index]?.length ?? 0) > 0;
+  }
+  return typeof response.answers[item.index] === "number";
+}
+
+/** 量表是否完整作答（选答题不计入门槛） */
+export function isScaleComplete(scale: Scale, response: ScaleResponse): boolean {
+  return scale.items.every((i) => i.optional || isItemAnswered(i, response));
+}
 
 /**
  * 通用计分函数
@@ -13,6 +35,18 @@ import type {
  */
 export function scoreScale(scale: Scale, response: ScaleResponse): ScaleResult {
   const answers = response.answers ?? {};
+
+  // 纯收集型问卷：不计分、不产维度分/警示，只回报完成度
+  if (scale.isSurvey) {
+    return {
+      scaleId: scale.id,
+      scaleName: scale.name,
+      scoringMethod: scale.scoringMethod,
+      dimensions: [],
+      warnings: [],
+      complete: isScaleComplete(scale, response),
+    };
+  }
 
   const dimensions: DimensionScore[] = scale.dimensions.map((dim) => {
     let rawSum = 0;

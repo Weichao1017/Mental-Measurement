@@ -42,6 +42,9 @@ export const asrs: Scale = {
   isCore: false,
   category: "anxiety_clinical",
   highIsBetter: false,
+  // ADHD 筛查 ≠ 抑郁/焦虑/用药通路；阳性结论由 Part A 判定盒给出（建议正规 ADHD 评估），
+  // 不进通用「临床综合判定」，避免误出「精神科 / SSRI」取向的医学建议。
+  excludeFromClinicalFlag: true,
   dimensionMaxScore: 24,
   instructions:
     "请回想你过去 6 个月里的状态，评估每种情况发生的频率。前 6 题是关键筛查题，后 12 题是补充。",

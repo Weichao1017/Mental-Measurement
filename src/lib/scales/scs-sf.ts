@@ -131,79 +131,65 @@ export const scsSf: Scale = {
       sourceRef: "SCS-26 #6",
     },
   ],
+  // ⚠️ SCS-SF 心理测量学定论：短版每个子维度仅 2 题、信度不足，**不建议**分维度报告，
+  //    应只用 12 题总分。故这里只暴露一个「自我关怀总分」维度（负向维度题已 reverse 翻转）。
   dimensions: [
     {
-      code: "SK",
-      name: "自我友善 Self-Kindness",
-      description: "在困难时刻能温柔对待自己",
-      itemIndices: [5, 10],
-    },
-    {
-      code: "SJ",
-      name: "自我评判 Self-Judgment（反向）",
-      description: "对自己的不足过度责备",
-      itemIndices: [1, 8],
-    },
-    {
-      code: "CH",
-      name: "共同人性 Common Humanity",
-      description: "把困境看作是人类共同体验的一部分",
-      itemIndices: [3, 7],
-    },
-    {
-      code: "IS",
-      name: "孤立感 Isolation（反向）",
-      description: "感觉自己的痛苦与众不同、被隔离",
-      itemIndices: [2, 11],
-    },
-    {
-      code: "MI",
-      name: "正念 Mindfulness",
-      description: "对痛苦保持觉察的同时不被席卷",
-      itemIndices: [4, 9],
-    },
-    {
-      code: "OI",
-      name: "过度认同 Over-Identification（反向）",
-      description: "被负面情绪过度卷入",
-      itemIndices: [6, 12],
+      code: "TOTAL",
+      name: "自我关怀总分",
+      nameEn: "Self-Compassion (total)",
+      description: "12 题综合（自我评判/孤立/过度认同等负向题已反向计分）；越高=越能善待自己",
+      descriptionEn: "Overall across 12 items (negative facets reverse-scored); higher = kinder to oneself",
+      itemIndices: [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12],
     },
   ],
   scoringMethod: "mean",
   severityBands: {
-    SK: [
-      { level: "low", label: "较低", min: 1, max: 2.5 },
-      { level: "moderate", label: "中等", min: 2.5, max: 3.5 },
-      { level: "high", label: "较高", min: 3.5, max: 5 },
-    ],
-    SJ: [
-      { level: "low", label: "较低", min: 1, max: 2.5 },
-      { level: "moderate", label: "中等", min: 2.5, max: 3.5 },
-      { level: "high", label: "较高", min: 3.5, max: 5 },
-    ],
-    CH: [
-      { level: "low", label: "较低", min: 1, max: 2.5 },
-      { level: "moderate", label: "中等", min: 2.5, max: 3.5 },
-      { level: "high", label: "较高", min: 3.5, max: 5 },
-    ],
-    IS: [
-      { level: "low", label: "较低", min: 1, max: 2.5 },
-      { level: "moderate", label: "中等", min: 2.5, max: 3.5 },
-      { level: "high", label: "较高", min: 3.5, max: 5 },
-    ],
-    MI: [
-      { level: "low", label: "较低", min: 1, max: 2.5 },
-      { level: "moderate", label: "中等", min: 2.5, max: 3.5 },
-      { level: "high", label: "较高", min: 3.5, max: 5 },
-    ],
-    OI: [
-      { level: "low", label: "较低", min: 1, max: 2.5 },
-      { level: "moderate", label: "中等", min: 2.5, max: 3.5 },
-      { level: "high", label: "较高", min: 3.5, max: 5 },
+    // Neff 常用解读切点：1-2.5 偏低 / 2.5-3.5 中等 / 3.5-5 较高
+    TOTAL: [
+      {
+        level: "low",
+        label: "自我关怀偏低",
+        labelEn: "Lower self-compassion",
+        min: 1,
+        max: 2.5,
+        clientNote:
+          "面对挫折和痛苦时，你现在更容易自我批评、感到孤立、被情绪卷走。这不是性格缺陷——自我关怀是一种可以练习的能力。可以从一个小动作开始：下次自责时，试着像安慰一位处境相同的好友那样，对自己说话。",
+        clientNoteEn:
+          "Right now you tend to be self-critical, feel isolated, and get swept up by emotion when things go wrong. This isn't a flaw — self-compassion is a trainable skill. A small start: next time you're self-critical, speak to yourself the way you'd comfort a close friend in the same situation.",
+        teacherNote:
+          "总分偏低（<2.5）。来访者在困境中以自我批评 / 孤立 / 过度认同为主，适合作为自我关怀（CFT / MSC）干预的重点对象，建议前后测追踪。",
+      },
+      {
+        level: "moderate",
+        label: "中等",
+        labelEn: "Moderate",
+        min: 2.5,
+        max: 3.5,
+        clientNote:
+          "你的自我关怀处于中等水平：有时能善待自己，有时又会陷入自责或反复纠结。在压力时刻有意识地停一下、提醒自己「此刻确实很难，我可以对自己温柔一点」，会帮你更稳。",
+        clientNoteEn:
+          "Your self-compassion is moderate: sometimes kind to yourself, sometimes caught in self-criticism. Pausing in hard moments to remind yourself 'this is genuinely difficult, I can be a bit gentler with myself' will help you steady.",
+        teacherNote:
+          "总分中等（2.5-3.5）。自我关怀能力不稳定，正念 / 自我关怀练习有较大提升空间。",
+      },
+      {
+        level: "high",
+        label: "自我关怀较高",
+        labelEn: "Higher self-compassion",
+        min: 3.5,
+        max: 5,
+        clientNote:
+          "你具备较强的自我关怀能力——能在困难中善待自己、把挫折看作人之常情，并在情绪来袭时保持觉察而不被淹没。这是一项重要的心理资源，继续保持。",
+        clientNoteEn:
+          "You have strong self-compassion — you can be kind to yourself in hard times, see setbacks as part of being human, and stay aware without being overwhelmed. This is a real psychological resource; keep nurturing it.",
+        teacherNote:
+          "总分较高（≥3.5）。自我关怀是其重要保护性资源，可作为治疗中的优势加以调动。",
+      },
     ],
   },
   citation: "Raes et al. (2011); Chinese version: Chen et al. (2011)",
   fullyVerified: false,
   notes:
-    "题目内容由 AI 从英文原版翻译，建议上线前与 Chen et al. (2011) 中文版对齐。SCS-SF 的总分用 12 题均值（反向题翻转后），反映自我关怀整体水平。",
+    "题目内容由 AI 从英文原版翻译，建议上线前与 Chen et al. (2011) 中文版对齐。按心理测量学定论，SCS-SF 只报告 12 题总分（均值，反向题已翻转），不分维度——每个 2 题子量表信度不足。",
 };

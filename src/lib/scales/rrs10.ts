@@ -65,7 +65,7 @@ export const rrs10: Scale = {
   ],
   dimensions: [
     { code: "BR", name: "Brooding 沉思/纠结", nameEn: "Brooding", description: "病理性反刍，跟抑郁强相关", descriptionEn: "Pathological rumination, strongly correlated with depression", itemIndices: [1, 2, 3, 4, 5] },
-    { code: "RF", name: "Reflection 反思", nameEn: "Reflection", description: "中性甚至适应性的思考", descriptionEn: "Neutral or adaptive contemplation", itemIndices: [6, 7, 8, 9, 10] },
+    { code: "RF", name: "Reflection 反思", nameEn: "Reflection", description: "中性甚至适应性的思考（高分不代表更差，故不按「高=困扰」上色）", descriptionEn: "Neutral or adaptive contemplation (high is not worse)", itemIndices: [6, 7, 8, 9, 10], neutralValence: true },
   ],
   scoringMethod: "sum",
   severityBands: {

@@ -4,6 +4,7 @@ import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import Container from "@/components/Container";
 import TherapistResultCard from "@/components/TherapistResultCard";
+import SurveyAnswersCard from "@/components/SurveyAnswersCard";
 import { getScale, CONCERN_OPTIONS } from "@/lib/scales";
 import { scoreScale } from "@/lib/scoring";
 import {
@@ -12,14 +13,14 @@ import {
   readHashPayload,
   type SharePayload,
 } from "@/lib/share";
-import type { ScaleResult } from "@/lib/types";
+import type { ScaleResult, ScaleResponse } from "@/lib/types";
 
 interface Decoded {
   payload: SharePayload;
   results: Array<{
     scaleId: string;
     result: ScaleResult;
-    response: { scaleId: string; answers: Record<number, number> };
+    response: ScaleResponse;
   }>;
 }
 
@@ -189,6 +190,12 @@ function OkView({ decoded }: { decoded: Decoded }) {
       <div className="space-y-5">
         {results.map(({ scaleId, result, response }) => {
           const scale = getScale(scaleId)!;
+          // 收集型问卷：不计分，展示逐题原始回答
+          if (scale.isSurvey) {
+            return (
+              <SurveyAnswersCard key={scaleId} scale={scale} response={response} />
+            );
+          }
           return (
             <TherapistResultCard
               key={scaleId}

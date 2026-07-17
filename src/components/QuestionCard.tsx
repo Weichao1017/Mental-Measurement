@@ -137,7 +137,8 @@ function ButtonsInput({ options, value, onChange }: Props) {
   );
 }
 
-function SliderInput({ options, value, onChange }: Props) {
+// 导出给 SurveyQuestionCard（收集型问卷的 1-10 打分题）复用
+export function SliderInput({ options, value, onChange }: Props) {
   const t = useT();
   // 按分数升序排列：左 = 低分，右 = 高分
   const sorted = useMemo(

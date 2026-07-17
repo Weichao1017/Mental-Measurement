@@ -37,6 +37,8 @@ export const ecr12: Scale = {
   estimatedMinutes: 3,
   isCore: false,
   highIsBetter: false,
+  // 依恋是关系/人格构念，非临床症状——高分仍按严重度展示，但不产生「就医/用药」类医学建议。
+  excludeFromClinicalFlag: true,
   dimensionMaxScore: 7,
   triggers: ["relationship_issues"],
   instructions:

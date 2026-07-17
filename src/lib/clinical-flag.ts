@@ -70,10 +70,14 @@ export function computeClinicalFlag(
       });
     }
 
-    // 只对 highIsBetter=false 的量表做症状 → 临床等级映射
-    if (!scale.highIsBetter) {
+    // 只对 highIsBetter=false 的量表做症状 → 临床等级映射；
+    // excludeFromClinicalFlag 的量表（如 ECR-12 依恋）不产生医学建议信号。
+    if (!scale.highIsBetter && !scale.excludeFromClinicalFlag) {
       for (const d of result.dimensions) {
         const dimInfo = scale.dimensions.find((x) => x.code === d.code);
+        // 中性/适应性维度（如 RRS 反思、MDQ 的同时性/影响等"标准条件"而非症状严重度）
+        // 不参与临床等级判断——它们要么不代表病理，要么只是组合判定的条件项（已由判定盒处理）。
+        if (dimInfo?.neutralValence) continue;
         const dName = pick(d.name, dimInfo?.nameEn, lang);
         const bandObj = scale.severityBands[d.code]?.find(
           (b) => b.label === d.band?.label

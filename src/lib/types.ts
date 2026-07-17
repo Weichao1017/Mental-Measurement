@@ -32,6 +32,33 @@ export interface ScaleItem {
    * 用于 PSQI 这种各题选项不同的量表。
    */
   options?: LikertOption[];
+  /**
+   * 题型（收集型问卷用；标准量表不设，默认 "choice" 即 Likert 单选）：
+   *  - choice：单选（答案存 answers[index]，number）
+   *  - multi：多选（答案存 multiAnswers[index]，number[]）
+   *  - text：自由文本（答案存 textAnswers[index]，string）
+   *  - number：数字填写（答案存 answers[index]，number）
+   */
+  inputType?: "choice" | "multi" | "text" | "number";
+  /** 选答题：不计入完成度门槛，可跳过 */
+  optional?: boolean;
+  /** text 题用多行 textarea（默认单行 input） */
+  multiline?: boolean;
+  /** text / number 题的占位提示 */
+  placeholder?: string;
+  /**
+   * choice 题下方附加的自由补充输入（如「都不是，我实际大概会说：」）。
+   * 始终可见、不计入完成度；内容存 textAnswers[index]。
+   */
+  freeTextLabel?: string;
+  /** 强制 UI 形态；不设则沿用 QuestionCard 现有启发式（≥5 项用滑杆） */
+  widget?: "buttons" | "slider";
+  /** number 题的最小/最大值与单位 */
+  min?: number;
+  max?: number;
+  unit?: string;
+  /** 分节标题：设在每节第一题上，渲染于该题卡片之前 */
+  section?: { title: string; note?: string };
 }
 
 /** Likert 选项 */
@@ -53,6 +80,11 @@ export interface ScaleDimension {
   descriptionEn?: string;
   /** 该维度包含的题号（DASS-21 index） */
   itemIndices: number[];
+  /**
+   * 该维度是「中性/适应性」的——高分不代表更差，结果页不按 scale.highIsBetter
+   * 的好/坏语义上色（改用中性灰）。如 RRS 的 Reflection 反思维度。
+   */
+  neutralValence?: boolean;
 }
 
 /** 严重程度分级阈值 */
@@ -103,6 +135,18 @@ export interface Scale {
    * 影响结果页色彩语义（高=绿 vs 高=红）。
    */
   highIsBetter: boolean;
+  /**
+   * 不参与「临床综合判定」(computeClinicalFlag) —— 即不产生「建议就医 / 用药」类信号。
+   * 用于关系/人格类构念量表（如 ECR-12 依恋）：高分有意义、仍按严重度上色，
+   * 但不应推导出 SSRI / 精神科取向的医学建议。结果页维度分照常展示。
+   */
+  excludeFromClinicalFlag?: boolean;
+  /**
+   * 纯收集型问卷（无标准计分）：不产出维度分/分级/总分，不参与临床综合判定
+   * 与 AI 分析；结果页与 therapist 视图改为逐题回顾原始回答。
+   * 例：家庭沙龙——家长热身问卷。
+   */
+  isSurvey?: boolean;
   /** 每个维度的满分（用于结果页显示 "14 / 42"），未设置则不显示分母 */
   dimensionMaxScore?: number;
   /** 触发该量表的"主诉关键词"（仅 isCore=false 时有用） */
@@ -139,6 +183,10 @@ export interface ScaleResponse {
   scaleId: string;
   /** 每道题的回答，键是 item.index，值是用户选择的 value */
   answers: Record<number, number>;
+  /** 文本题 / 自由补充的回答（收集型问卷用），键是 item.index */
+  textAnswers?: Record<number, string>;
+  /** 多选题的回答（收集型问卷用），键是 item.index */
+  multiAnswers?: Record<number, number[]>;
   /** 完成时间 */
   completedAt?: string;
 }

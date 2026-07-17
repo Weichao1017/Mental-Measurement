@@ -50,6 +50,9 @@ export const aci: Scale = {
   isCore: false,
   category: "anxiety_clinical",
   highIsBetter: false,
+  // CDS/SCT 非 DSM 诊断、ADHD 内化型补充评估，非抑郁/焦虑/用药通路；
+  // 不进通用「临床综合判定」，结论由其维度分级 + 备注引导（建议正规评估）。
+  excludeFromClinicalFlag: true,
   dimensionMaxScore: 48,
   instructions:
     "请评估下列描述跟你在过去 6 个月里的实际状态符合的程度。这一份量表测量的是「认知脱离 / 注意力涣散」相关的体验，跟外化型多动症状不同。",

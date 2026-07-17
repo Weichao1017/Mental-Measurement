@@ -31,6 +31,11 @@ const CATEGORY_ORDER: Array<{
     titleKey: "library_cat_anxiety",
     subKey: "library_cat_anxiety_sub",
   },
+  {
+    key: "salon",
+    titleKey: "library_cat_salon",
+    subKey: "library_cat_salon_sub",
+  },
 ];
 
 export default function LibraryPage() {
@@ -290,12 +295,21 @@ function ScaleCard({
           </dd>
         </div>
         <div>
-          <dt className="inline">{t("library_card_direction")}</dt>
-          <dd className="inline text-brand-700">
-            {scale.highIsBetter
-              ? t("library_dir_high_good")
-              : t("library_dir_high_bad")}
-          </dd>
+          {scale.isSurvey ? (
+            <>
+              <dt className="inline">{t("library_card_type")}</dt>
+              <dd className="inline text-brand-700">{t("library_type_survey")}</dd>
+            </>
+          ) : (
+            <>
+              <dt className="inline">{t("library_card_direction")}</dt>
+              <dd className="inline text-brand-700">
+                {scale.highIsBetter
+                  ? t("library_dir_high_good")
+                  : t("library_dir_high_bad")}
+              </dd>
+            </>
+          )}
         </div>
       </dl>
     </article>

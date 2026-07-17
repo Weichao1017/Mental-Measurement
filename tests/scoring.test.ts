@@ -8,10 +8,11 @@
  *   5. 反向计分逻辑（用 SCS-SF / FFMQ-15 占位结构）
  */
 
-import { scoreScale } from "../src/lib/scoring";
+import { scoreScale, isItemAnswered, isScaleComplete } from "../src/lib/scoring";
 import { dass21 } from "../src/lib/scales/dass21";
 import { who5 } from "../src/lib/scales/who5";
 import { scsSf } from "../src/lib/scales/scs-sf";
+import { salonWarmup } from "../src/lib/scales/salon-warmup";
 import type { ScaleResponse } from "../src/lib/types";
 
 let pass = 0;
@@ -259,6 +260,63 @@ console.log("\nshare · 部分未答题的处理");
   const responses = payloadToResponses(payload);
   expectEq("未答题不出现在 answers 里", Object.keys(responses.who5.answers).sort(), ["1", "3"]);
   expectEq("已答题值保留", responses.who5.answers[1], 5);
+}
+
+// ============================================================
+// 收集型问卷（salon-warmup）：不计分 + 完成度 + share 文本/多选往返
+// ============================================================
+console.log("\nsalon-warmup · 收集型问卷");
+{
+  // 必答题全部作答（选答题 5/8/15/16 留空）
+  const resp: ScaleResponse = {
+    scaleId: "salon-warmup",
+    answers: { 3: 15, 4: 1, 6: 4, 7: 3, 9: 2, 11: 6, 12: 8, 13: 2, 17: 9, 18: 6 },
+    textAnswers: { 1: "微信名张三", 2: "老张", 7: "我实际会说：先冷静一下", 14: "「你根本不懂我」" },
+    multiAnswers: { 10: [1, 3] },
+  };
+  const r = scoreScale(salonWarmup, resp);
+  expectEq("survey 不产维度分", r.dimensions.length, 0);
+  expectEq("survey 无警示", r.warnings.length, 0);
+  expectEq("survey 必答齐全 complete=true", r.complete, true);
+  expectEq("survey 无总分", r.totalScore, undefined);
+
+  // 少答一道必答题（14 语料1）→ 不完整
+  const incomplete: ScaleResponse = {
+    ...resp,
+    textAnswers: { 1: "微信名张三", 2: "老张" },
+  };
+  expectEq("缺必答文本题 complete=false", scoreScale(salonWarmup, incomplete).complete, false);
+
+  // 选答题不挡完成度
+  expectEq("选答题未答不算未完成", isScaleComplete(salonWarmup, resp), true);
+  // 空白文本不算已答
+  expectEq(
+    "空白文本不算已答",
+    isItemAnswered(salonWarmup.items.find((i) => i.index === 14)!, {
+      scaleId: "salon-warmup",
+      answers: {},
+      textAnswers: { 14: "   " },
+    }),
+    false
+  );
+
+  // share 编解码往返：文本 / 多选 / 数字都要原样回来
+  const session: SessionState = {
+    startedAt: "2026-07-17T00:00:00.000Z",
+    concerns: [],
+    battery: ["salon-warmup"],
+    currentIndex: 0,
+    responses: { "salon-warmup": resp },
+  };
+  const encoded = encodeSession(session);
+  const payload = decodePayload(encoded)!;
+  const back = payloadToResponses(payload)["salon-warmup"];
+  expectEq("数字答案往返", back.answers[3], 15);
+  expectEq("单选答案往返", back.answers[6], 4);
+  expectEq("文本答案往返（中文+引号）", back.textAnswers?.[14], "「你根本不懂我」");
+  expectEq("自由补充往返", back.textAnswers?.[7], "我实际会说：先冷静一下");
+  expectEq("多选答案往返", back.multiAnswers?.[10], [1, 3]);
+  expectEq("往返后 complete=true", scoreScale(salonWarmup, back).complete, true);
 }
 
 // ============================================================

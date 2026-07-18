@@ -51,19 +51,30 @@ export const salonWarmup: Scale = {
     },
     {
       index: 3,
-      text: "孩子年龄",
-      textEn: "Your child's age",
+      text: "孩子情况（可添加多个孩子，每个孩子填一个年龄 + 性别）",
+      textEn:
+        "Your children (add one row per child — age + gender; add as many as you have)",
       dimension: "Q",
-      inputType: "number",
+      inputType: "children",
       min: 1,
       max: 60,
       unit: "岁",
+      // 向后兼容：合并前「年龄」在本题(index 3)、「性别」在 index 4；旧提交无 children
+      // JSON 时，用这两处旧字段合成「一个孩子」显示，保住已收集数据。
+      childrenLegacy: { ageIndex: 3, genderIndex: 4 },
+      options: [
+        { value: 1, label: "男生", labelEn: "Boy" },
+        { value: 2, label: "女生", labelEn: "Girl" },
+      ],
     },
     {
+      // 旧「孩子性别」题：已并入 index 3 的 children 复合题。保留在题库里只为维持
+      // 分享 payload 的 positional 对齐（绝不删题/改题号），设 hidden 不再渲染。
       index: 4,
-      text: "孩子性别（如有多个孩子可多选）",
-      textEn: "Your child's gender (select all that apply if you have more than one child)",
+      text: "孩子性别（已并入上一题）",
+      textEn: "Child's gender (merged into the previous question)",
       dimension: "Q",
+      hidden: true,
       inputType: "multi",
       options: [
         { value: 1, label: "男生", labelEn: "Boy" },

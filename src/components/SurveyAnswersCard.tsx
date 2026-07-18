@@ -1,7 +1,7 @@
 "use client";
 
 import type { Scale, ScaleResponse } from "@/lib/types";
-import { isItemAnswered } from "@/lib/scoring";
+import { isItemAnswered, parseChildren, type ChildEntry } from "@/lib/scoring";
 import { useT, useLang, pick } from "@/lib/lang";
 
 /**
@@ -23,7 +23,10 @@ export default function SurveyAnswersCard({ scale, response }: Props) {
   const t = useT();
   const { lang } = useLang();
 
-  const items = [...scale.items].sort((a, b) => a.index - b.index);
+  // 隐藏题（如已并入别题的旧题）不展示、不计入
+  const items = [...scale.items]
+    .filter((i) => !i.hidden)
+    .sort((a, b) => a.index - b.index);
   const answeredCount = items.filter((i) => isItemAnswered(i, response)).length;
 
   return (
@@ -111,6 +114,7 @@ function AnswerValue({
   response: ScaleResponse;
 }) {
   const { lang } = useLang();
+  const t = useT();
   const kind = item.inputType ?? "choice";
   const options = item.options ?? scale.options;
 
@@ -120,6 +124,48 @@ function AnswerValue({
       <p className="whitespace-pre-wrap break-words rounded-lg bg-sage-50 px-3 py-2 text-sm leading-relaxed text-ink">
         {v}
       </p>
+    );
+  }
+
+  if (kind === "children") {
+    let rows: ChildEntry[] = parseChildren(response.textAnswers?.[item.index]);
+    // 向后兼容：合并前的旧提交没有 children JSON，用旧「年龄(ageIndex)+性别(genderIndex)」
+    // 合成「一个孩子」显示，保住已收集数据（不因合并题型而丢显示）。
+    if (rows.length === 0 && item.childrenLegacy) {
+      const { ageIndex, genderIndex } = item.childrenLegacy;
+      const legacyAge = response.answers[ageIndex];
+      const legacyGender =
+        response.multiAnswers?.[genderIndex]?.[0] ?? response.answers[genderIndex];
+      if (typeof legacyAge === "number" || typeof legacyGender === "number") {
+        rows = [
+          {
+            age: typeof legacyAge === "number" ? legacyAge : null,
+            gender: typeof legacyGender === "number" ? legacyGender : null,
+          },
+        ];
+      }
+    }
+    if (rows.length === 0) {
+      return <span className="text-sm text-brand-300">{t("survey_unanswered")}</span>;
+    }
+    return (
+      <ul className="space-y-1.5">
+        {rows.map((c, i) => {
+          const g = options.find((o) => o.value === c.gender);
+          const parts: string[] = [];
+          if (typeof c.age === "number") parts.push(`${c.age}${item.unit ?? ""}`);
+          if (g) parts.push(pick(g.label, g.labelEn, lang));
+          return (
+            <li key={i} className="text-sm font-medium text-ink">
+              <span className="mr-1.5 text-sage-700">
+                {t("children_child_prefix")}
+                {i + 1}
+              </span>
+              {parts.length > 0 ? parts.join(" · ") : "—"}
+            </li>
+          );
+        })}
+      </ul>
     );
   }
 

@@ -2,6 +2,7 @@
 
 import type { LikertOption, ScaleItem } from "@/lib/types";
 import { useT } from "@/lib/lang";
+import { parseChildren, childRowFilled, type ChildEntry } from "@/lib/scoring";
 import { SliderInput } from "./QuestionCard";
 
 /**
@@ -48,14 +49,18 @@ export default function SurveyQuestionCard(props: Props) {
   const answered =
     kind === "text"
       ? textValue.trim() !== ""
-      : kind === "multi"
-        ? multiValue.length > 0
-        : value !== null;
+      : kind === "children"
+        ? parseChildren(textValue).some(childRowFilled)
+        : kind === "multi"
+          ? multiValue.length > 0
+          : value !== null;
 
   return (
     <Shell {...props} answered={answered}>
       {kind === "text" ? (
         <TextInput {...props} />
+      ) : kind === "children" ? (
+        <ChildrenInput {...props} />
       ) : kind === "multi" ? (
         <MultiInput {...props} />
       ) : kind === "number" ? (
@@ -224,6 +229,100 @@ function MultiInput({ options, multiValue, onMultiToggle }: Props) {
           </button>
         );
       })}
+    </div>
+  );
+}
+
+function ChildrenInput({ item, options, textValue, onTextChange }: Props) {
+  const t = useT();
+  const rows = parseChildren(textValue);
+  // 至少显示一行，方便用户直接看到「年龄 + 性别」输入
+  const display: ChildEntry[] = rows.length > 0 ? rows : [{ age: null, gender: null }];
+
+  const commit = (next: ChildEntry[]) => {
+    const hasAny = next.some((c) => c.age !== null || c.gender !== null);
+    // 全空 → 存空串（走未答）；否则序列化进文本通道
+    onTextChange(hasAny ? JSON.stringify(next) : "");
+  };
+  const setRow = (i: number, patch: Partial<ChildEntry>) =>
+    commit(display.map((c, idx) => (idx === i ? { ...c, ...patch } : c)));
+  const addRow = () => commit([...display, { age: null, gender: null }]);
+  const removeRow = (i: number) => {
+    const next = display.filter((_, idx) => idx !== i);
+    commit(next.length ? next : [{ age: null, gender: null }]);
+  };
+
+  return (
+    <div className="space-y-3">
+      {display.map((c, i) => (
+        <div key={i} className="rounded-xl border border-brand-200 bg-cream/40 p-3.5">
+          <div className="mb-2.5 flex items-center justify-between">
+            <span className="text-sm font-medium text-brand-600">
+              {t("children_child_prefix")}
+              {i + 1}
+            </span>
+            {display.length > 1 ? (
+              <button
+                type="button"
+                onClick={() => removeRow(i)}
+                className="text-xs text-brand-400 transition hover:text-rose-600"
+              >
+                {t("children_remove")}
+              </button>
+            ) : null}
+          </div>
+          <div className="flex flex-wrap items-center gap-x-4 gap-y-3">
+            <div className="flex items-center gap-1.5">
+              <input
+                type="number"
+                inputMode="numeric"
+                value={c.age ?? ""}
+                min={item.min}
+                max={item.max}
+                onChange={(e) => {
+                  const raw = e.target.value;
+                  if (raw === "") return setRow(i, { age: null });
+                  const n = Number(raw);
+                  if (Number.isFinite(n)) setRow(i, { age: n });
+                }}
+                placeholder={t("children_age_placeholder")}
+                className="w-24 rounded-xl border border-brand-200 bg-white px-3 py-2 text-base text-ink placeholder:text-brand-300 focus:border-sage-400 focus:outline-none focus:ring-2 focus:ring-sage-200"
+              />
+              {item.unit ? (
+                <span className="text-sm text-brand-600">{item.unit}</span>
+              ) : null}
+            </div>
+            <div className="flex gap-2">
+              {options.map((opt) => {
+                const sel = c.gender === opt.value;
+                return (
+                  <button
+                    key={opt.value}
+                    type="button"
+                    onClick={() => setRow(i, { gender: sel ? null : opt.value })}
+                    aria-pressed={sel}
+                    className={[
+                      "rounded-xl border px-4 py-2 text-base transition-all focus:outline-none focus:ring-2 focus:ring-sage-400",
+                      sel
+                        ? "border-sage-500 bg-sage-50 text-ink"
+                        : "border-brand-200 bg-white text-brand-700 hover:border-brand-300 hover:bg-cream",
+                    ].join(" ")}
+                  >
+                    {opt.label}
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+        </div>
+      ))}
+      <button
+        type="button"
+        onClick={addRow}
+        className="rounded-xl border border-dashed border-sage-400 px-4 py-2.5 text-sm font-medium text-sage-700 transition hover:bg-sage-50"
+      >
+        ＋ {t("children_add")}
+      </button>
     </div>
   );
 }

@@ -55,7 +55,9 @@ export default function ScaleRunner({ scale }: Props) {
     saveResponse(scale.id, resp);
   }, [answers, texts, multis, mounted, scale.id]);
 
-  const items = scale.items;
+  // 隐藏题（如已并入别题的旧题）不渲染、不计入完成度；
+  // 注意 encodeSession 仍用完整 scale.items 保持分享 payload 的 positional 对齐。
+  const items = useMemo(() => scale.items.filter((i) => !i.hidden), [scale.items]);
   // 完成度只看必答题（标准量表没有 optional，等同全部题目）
   const requiredItems = useMemo(() => items.filter((i) => !i.optional), [items]);
   const currentResponse = useMemo<ScaleResponse>(

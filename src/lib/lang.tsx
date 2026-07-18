@@ -459,6 +459,11 @@ export const UI = {
   survey_extra_note: { zh: "补充", en: "Note" },
   survey_items_unit: { zh: "题", en: "items" },
   survey_answered_label: { zh: "已答", en: "Answered" },
+  // children 复合题（可添加多个孩子：年龄 + 性别）
+  children_child_prefix: { zh: "孩子 ", en: "Child " },
+  children_add: { zh: "再添加一个孩子", en: "Add another child" },
+  children_remove: { zh: "删除", en: "Remove" },
+  children_age_placeholder: { zh: "年龄", en: "Age" },
 
   // ResultCard / Therapist
   rc_band_pending: { zh: "题库待核对", en: "Translation in review" },

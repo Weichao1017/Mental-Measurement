@@ -11,11 +11,47 @@ import type {
  * 一道题是否已作答（按题型分别看三个答案存储）。
  * 标准量表条目（无 inputType）走 choice 分支，行为与旧逻辑完全一致。
  */
+/** children 复合题的一行（一个孩子） */
+export interface ChildEntry {
+  age: number | null;
+  gender: number | null;
+}
+
+/** 解析 children 题存在 textAnswers 里的 JSON；坏数据返回空数组 */
+export function parseChildren(raw: string | undefined | null): ChildEntry[] {
+  if (!raw) return [];
+  try {
+    const arr = JSON.parse(raw);
+    if (!Array.isArray(arr)) return [];
+    return arr
+      .filter((c) => c && typeof c === "object")
+      .map((c) => ({
+        age:
+          typeof c.age === "number" && Number.isFinite(c.age) ? c.age : null,
+        gender: typeof c.gender === "number" ? c.gender : null,
+      }));
+  } catch {
+    return [];
+  }
+}
+
+/** 一行「孩子」是否算填了（至少填了年龄） */
+export function childRowFilled(c: ChildEntry): boolean {
+  return typeof c.age === "number";
+}
+
 export function isItemAnswered(item: ScaleItem, response: ScaleResponse): boolean {
   const kind = item.inputType ?? "choice";
   if (kind === "text") {
     const v = response.textAnswers?.[item.index];
     return typeof v === "string" && v.trim() !== "";
+  }
+  if (kind === "children") {
+    const rows = parseChildren(response.textAnswers?.[item.index]);
+    if (rows.some(childRowFilled)) return true;
+    // 向后兼容：合并前旧提交把年龄存在 answers[ageIndex]
+    const lg = item.childrenLegacy;
+    return !!lg && typeof response.answers[lg.ageIndex] === "number";
   }
   if (kind === "multi") {
     if ((response.multiAnswers?.[item.index]?.length ?? 0) > 0) return true;
@@ -25,9 +61,11 @@ export function isItemAnswered(item: ScaleItem, response: ScaleResponse): boolea
   return typeof response.answers[item.index] === "number";
 }
 
-/** 量表是否完整作答（选答题不计入门槛） */
+/** 量表是否完整作答（选答题 / 隐藏题不计入门槛） */
 export function isScaleComplete(scale: Scale, response: ScaleResponse): boolean {
-  return scale.items.every((i) => i.optional || isItemAnswered(i, response));
+  return scale.items.every(
+    (i) => i.hidden || i.optional || isItemAnswered(i, response)
+  );
 }
 
 /**

@@ -39,7 +39,19 @@ export interface ScaleItem {
    *  - text：自由文本（答案存 textAnswers[index]，string）
    *  - number：数字填写（答案存 answers[index]，number）
    */
-  inputType?: "choice" | "multi" | "text" | "number";
+  inputType?: "choice" | "multi" | "text" | "number" | "children";
+  /**
+   * children 题：可重复的「孩子」复合输入（每行 = 年龄 + 性别，可添加多个）。
+   * 数据序列化成 JSON 存 textAnswers[index]（走既有文本通道，不占 answers 数组、
+   * 不改题目位置，故不破坏 positional 分享 payload 的向后兼容）。
+   * 性别选项用 item.options；年龄范围用 item.min/max。
+   */
+  childrenLegacy?: { ageIndex: number; genderIndex: number };
+  /**
+   * 隐藏题：仍保留在 items 里（维持分享 payload 的 positional 对齐，绝不删/改题号），
+   * 但不渲染、不计入完成度。用于把两道旧题合并成一道新题时，把被合并掉的旧题就地隐藏。
+   */
+  hidden?: boolean;
   /** 选答题：不计入完成度门槛，可跳过 */
   optional?: boolean;
   /** text 题用多行 textarea（默认单行 input） */

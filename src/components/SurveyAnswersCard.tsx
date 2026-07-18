@@ -23,10 +23,10 @@ export default function SurveyAnswersCard({ scale, response }: Props) {
   const t = useT();
   const { lang } = useLang();
 
-  // 隐藏题（如已并入别题的旧题）不展示、不计入
-  const items = [...scale.items]
-    .filter((i) => !i.hidden)
-    .sort((a, b) => a.index - b.index);
+  // 隐藏题（如已并入别题的旧题）不展示、不计入。
+  // 按 items 数组顺序展示（与填写页 ScaleRunner 一致）——因为新题为保护既有数据取了
+  // 大题号(如出生地 index 19)但要显示在问卷上部，展示顺序须跟数组走、不能按 index 排。
+  const items = scale.items.filter((i) => !i.hidden);
   const answeredCount = items.filter((i) => isItemAnswered(i, response)).length;
 
   return (

@@ -68,6 +68,18 @@ export const salonWarmup: Scale = {
       ],
     },
     {
+      // 孩子出生地（2026-07-18 新增，自由填空）。
+      // 铁律：一旦上线，新题必须取「比现有全部题号都大」的 index，使其在分享 payload 的
+      // positional a 数组里排到最后、绝不挤动任何既有题的位置（保护已收集的真实数据）。
+      // 显示位置由 items 数组顺序决定（与 index 解耦）——放在此处即问卷上部、孩子情况之后。
+      index: 19,
+      text: "孩子出生地",
+      textEn: "Your child's birthplace",
+      dimension: "Q",
+      inputType: "text",
+      placeholder: "如：广东深圳 / 北京",
+    },
+    {
       // 旧「孩子性别」题：已并入 index 3 的 children 复合题。保留在题库里只为维持
       // 分享 payload 的 positional 对齐（绝不删题/改题号），设 hidden 不再渲染。
       index: 4,

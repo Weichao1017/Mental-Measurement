@@ -77,7 +77,9 @@ export const salonWarmup: Scale = {
       textEn: "Your child's birthplace",
       dimension: "Q",
       inputType: "text",
-      placeholder: "如：广东深圳 / 北京",
+      // 显式空串：TextInput 用 `item.placeholder ?? 默认`，若删字段会回退到默认提示；
+      // 空串（非 nullish）才能让输入框真正留空、无任何占位文字。
+      placeholder: "",
     },
     {
       // 旧「孩子性别」题：已并入 index 3 的 children 复合题。保留在题库里只为维持

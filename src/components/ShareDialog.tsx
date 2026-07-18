@@ -13,14 +13,20 @@ interface Props {
    *  - therapist：/results 分享「含答案」的解读链接给疗愈师（默认）
    *  - host：收集型问卷把「含回答」的链接交给家庭沙龙主持人
    *  - taker：/start 把「空白邀请链接」（不含任何答案）发给来访者去作答
+   *  - taker_collect：同 taker，但已开启回收——对方作答会上传到老师的收集本
    */
-  audience?: "therapist" | "host" | "taker";
+  audience?: "therapist" | "host" | "taker" | "taker_collect";
 }
 
 const AUDIENCE_KEYS = {
   therapist: { title: "share_title", intro: "share_intro", warning: "share_warning" },
   host: { title: "share_title_host", intro: "share_intro_host", warning: "share_warning_host" },
   taker: { title: "share_title_taker", intro: "share_intro_taker", warning: "share_warning_taker" },
+  taker_collect: {
+    title: "share_title_taker_collect",
+    intro: "share_intro_taker_collect",
+    warning: "share_warning_taker_collect",
+  },
 } as const;
 
 export default function ShareDialog({ url, open, onClose, audience = "therapist" }: Props) {

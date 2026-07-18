@@ -28,13 +28,18 @@ export function clearSession() {
   window.localStorage.removeItem(KEY);
 }
 
-export function newSession(battery: string[], concerns: Concern[]): SessionState {
+export function newSession(
+  battery: string[],
+  concerns: Concern[],
+  collectionId?: string
+): SessionState {
   const s: SessionState = {
     concerns,
     battery,
     currentIndex: 0,
     responses: {},
     startedAt: new Date().toISOString(),
+    ...(collectionId ? { collectionId } : {}),
   };
   saveSession(s);
   return s;

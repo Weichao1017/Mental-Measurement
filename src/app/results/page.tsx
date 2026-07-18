@@ -11,6 +11,7 @@ import SurveyAnswersCard from "@/components/SurveyAnswersCard";
 import { getScale } from "@/lib/scales";
 import { scoreScale } from "@/lib/scoring";
 import { loadSession, clearSession } from "@/lib/store";
+import { uploadCurrentSession } from "@/lib/collect";
 import { buildShareUrl, encodeSession } from "@/lib/share";
 import { computeClinicalFlag, type ClinicalLevel } from "@/lib/clinical-flag";
 import { getPercentile } from "@/lib/norms";
@@ -32,9 +33,31 @@ export default function ResultsPage() {
   const [aiText, setAiText] = useState("");
   const [copied, setCopied] = useState(false);
 
+  // 该会话是否属于某收集本（决定 UI 走「回收态」还是「本机态」）
+  const inCollection = !!session?.collectionId;
+  // 上传是否真的成功（决定是否显示「✓ 已提交给发起人」）——不能只凭 collectionId，
+  // 网络失败/超时下 uploadedAt 仍为空，否则会向来访者做假承诺
+  const uploadOk = !!session?.uploadedAt;
+  const [uploadTried, setUploadTried] = useState(false);
+
   useEffect(() => {
-    setSession(loadSession());
+    const s = loadSession();
+    setSession(s);
+    // 兜底：若属于收集本但完成时上传失败（uploadedAt 为空），在结果页再试一次
+    if (s?.collectionId && !s.uploadedAt) {
+      uploadCurrentSession().then((ok) => {
+        setUploadTried(true);
+        if (ok) setSession(loadSession());
+      });
+    } else {
+      setUploadTried(true);
+    }
   }, []);
+
+  const retryUpload = async () => {
+    const ok = await uploadCurrentSession();
+    if (ok) setSession(loadSession());
+  };
 
   const shareUrl = useMemo(() => {
     if (!session) return "";
@@ -110,8 +133,34 @@ export default function ResultsPage() {
           {t("results_title")}
         </h1>
         <p className="mb-8 max-w-prose leading-relaxed text-brand-700">
-          {t(surveyOnly ? "results_intro_survey" : "results_intro")}
+          {t(
+            uploadOk
+              ? surveyOnly
+                ? "results_intro_survey_collected"
+                : "results_intro_collected"
+              : surveyOnly
+                ? "results_intro_survey"
+                : "results_intro"
+          )}
         </p>
+
+        {inCollection && uploadOk ? (
+          <div className="mb-8 rounded-2xl border border-sage-300 bg-sage-50 p-4 text-sm leading-relaxed text-brand-700">
+            {t("results_collected_banner")}
+          </div>
+        ) : null}
+        {inCollection && !uploadOk && uploadTried ? (
+          <div className="mb-8 rounded-2xl border border-amber-300 bg-amber-50 p-4 text-sm leading-relaxed text-amber-900">
+            <p className="mb-2">{t("results_upload_failed_banner")}</p>
+            <button
+              type="button"
+              onClick={retryUpload}
+              className="rounded-lg border border-amber-400 bg-white px-3 py-1.5 text-xs font-medium text-amber-900 hover:bg-amber-100"
+            >
+              {t("results_upload_retry")}
+            </button>
+          </div>
+        ) : null}
 
         {clinicalFlag ? <ClinicalFlagCard flag={clinicalFlag} /> : null}
 
@@ -166,7 +215,7 @@ export default function ResultsPage() {
                 {t("survey_done_title")}
               </h2>
               <p className="text-sm leading-relaxed text-brand-700">
-                {t("survey_done_desc")}
+                {t(uploadOk ? "survey_done_desc_collected" : "survey_done_desc")}
               </p>
             </div>
             {surveyResults.map(({ scaleId, scale }) => {
@@ -224,22 +273,26 @@ export default function ResultsPage() {
           </button>
         </div>
 
-        <div className="mt-10 rounded-2xl border border-sage-200 bg-sage-50 p-6">
-          <h2 className="mb-2 font-serif text-lg text-ink">
-            {t(surveyOnly ? "results_share_title_survey" : "results_share_title")}
-          </h2>
-          <p className="mb-4 text-sm leading-relaxed text-brand-700">
-            {t(surveyOnly ? "results_share_desc_survey" : "results_share_desc")}
-          </p>
-          <button
-            type="button"
-            className="btn-primary"
-            onClick={() => setShareOpen(true)}
-            disabled={!shareUrl}
-          >
-            {t(surveyOnly ? "results_share_btn_survey" : "results_share_btn")}
-          </button>
-        </div>
+        {/* 手动「交给老师/主持人」分享卡：仅在「上传确实成功」时才隐藏，
+            否则(不属收集本 / 上传失败)都保留，给用户一个真实可用的兜底通道 */}
+        {!uploadOk ? (
+          <div className="mt-10 rounded-2xl border border-sage-200 bg-sage-50 p-6">
+            <h2 className="mb-2 font-serif text-lg text-ink">
+              {t(surveyOnly ? "results_share_title_survey" : "results_share_title")}
+            </h2>
+            <p className="mb-4 text-sm leading-relaxed text-brand-700">
+              {t(surveyOnly ? "results_share_desc_survey" : "results_share_desc")}
+            </p>
+            <button
+              type="button"
+              className="btn-primary"
+              onClick={() => setShareOpen(true)}
+              disabled={!shareUrl}
+            >
+              {t(surveyOnly ? "results_share_btn_survey" : "results_share_btn")}
+            </button>
+          </div>
+        ) : null}
 
         <div className="mt-8 flex flex-wrap items-center gap-4">
           <button

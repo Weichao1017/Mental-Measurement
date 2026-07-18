@@ -4,6 +4,7 @@ import { useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import type { Scale, ScaleResponse } from "@/lib/types";
 import { loadSession, saveResponse, advanceToNext } from "@/lib/store";
+import { uploadCurrentSession } from "@/lib/collect";
 import { isItemAnswered } from "@/lib/scoring";
 import { useT, useLang, pick } from "@/lib/lang";
 import QuestionCard from "./QuestionCard";
@@ -22,6 +23,9 @@ export default function ScaleRunner({ scale }: Props) {
   const [texts, setTexts] = useState<Record<number, string>>({});
   const [multis, setMultis] = useState<Record<number, number[]>>({});
   const [mounted, setMounted] = useState(false);
+  // 提交按钮 in-flight 守卫：整套 battery 完成时 handleSubmit 会 await 一次上传，
+  // 期间按钮必须禁用，防用户在等待跳转时快速二次点击造成并发上传/重复作答。
+  const [submitting, setSubmitting] = useState(false);
 
   // 恢复之前的答案
   useEffect(() => {
@@ -127,16 +131,26 @@ export default function ScaleRunner({ scale }: Props) {
     });
   };
 
-  const handleSubmit = () => {
-    const resp = buildResponse(new Date().toISOString());
-    saveResponse(scale.id, resp);
-    const session = advanceToNext();
-    if (session && session.currentIndex < session.battery.length) {
-      const nextScaleSlug = session.battery[session.currentIndex];
-      window.scrollTo({ top: 0, behavior: "instant" });
-      router.push(`/assessment/${nextScaleSlug}/`);
-    } else {
-      router.push("/results/");
+  const handleSubmit = async () => {
+    if (submitting) return; // 双击/重入守卫
+    setSubmitting(true);
+    try {
+      const resp = buildResponse(new Date().toISOString());
+      saveResponse(scale.id, resp);
+      const session = advanceToNext();
+      if (session && session.currentIndex < session.battery.length) {
+        const nextScaleSlug = session.battery[session.currentIndex];
+        window.scrollTo({ top: 0, behavior: "instant" });
+        router.push(`/assessment/${nextScaleSlug}/`);
+      } else {
+        // 整套 battery 完成：若属于某收集本则上传（best-effort，失败由 /results 兜底重试）
+        await uploadCurrentSession();
+        router.push("/results/");
+      }
+    } finally {
+      // 页面即将离开，setSubmitting(false) 通常不会真的生效；写在 finally 是防
+      // 早 return / 抛错的兜底，避免按钮被永久锁死
+      setSubmitting(false);
     }
   };
 
@@ -242,8 +256,13 @@ export default function ScaleRunner({ scale }: Props) {
         {allDone ? (
           <>
             <p className="mb-4 text-brand-700">{t("runner_completed_all")}</p>
-            <button type="button" className="btn-primary" onClick={handleSubmit}>
-              {t("runner_submit_continue")}
+            <button
+              type="button"
+              className="btn-primary disabled:cursor-not-allowed disabled:opacity-60"
+              onClick={handleSubmit}
+              disabled={submitting}
+            >
+              {submitting ? t("runner_submitting") : t("runner_submit_continue")}
             </button>
           </>
         ) : (

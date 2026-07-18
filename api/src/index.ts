@@ -18,6 +18,7 @@ import { cors } from "hono/cors";
 import { streamSSE } from "hono/streaming";
 import OpenAI from "openai";
 import { decodePayload, type SharePayload } from "./share.js";
+import * as store from "./storage.js";
 
 const PORT = Number(process.env.PORT ?? 3100);
 const MODEL = process.env.DEEPSEEK_MODEL ?? "deepseek-reasoner";
@@ -203,6 +204,139 @@ app.post("/api/analyze", async (c) => {
         data: JSON.stringify({ error: "upstream", message: msg }),
       });
     }
+  });
+});
+
+// ============================================================================
+// 收集本（老师后端回收作答）
+//   POST /api/collections                  老师创建收集本 → { collectionId, ownerKey }
+//   POST /api/collections/:id/responses    来访者作答完自动上传 { d }
+//   GET  /api/collections/:id/responses    老师凭 ownerKey（Authorization: Bearer）查看全部提交
+// 数据存 DATA_DIR（nginx /api 反代后面，不对外静态暴露）。默认关闭：前端不带 collectionId 就完全不调这些端点，维持纯本机现状。
+// ============================================================================
+
+const SUBMIT_LIMIT = Number(process.env.COLLECT_SUBMIT_LIMIT_PER_DAY ?? 300);
+const CREATE_LIMIT = Number(process.env.COLLECT_CREATE_LIMIT_PER_DAY ?? 50);
+const MAX_PAYLOAD_CHARS = Number(process.env.COLLECT_MAX_PAYLOAD_CHARS ?? 200000);
+const collectSubmitMap = new Map<string, number[]>();
+const collectCreateMap = new Map<string, number[]>();
+
+function clientIp(c: { req: { header: (k: string) => string | undefined } }): string {
+  // 只信任 nginx 在源站设置的 x-real-ip；cf-connecting-ip / x-forwarded-for
+  // 是客户端可任意伪造的头（node 监听 127.0.0.1，nginx 未剥离即透传），
+  // 用它做限流键就等于把限流拆桶——每请求换值即失效。此站生产在 nginx 后无
+  // Cloudflare，x-real-ip 由 vhost 设置为可信来源 IP。
+  return c.req.header("x-real-ip") || "unknown";
+}
+
+// 通用滑动 24h 窗口限流（独立于 /api/analyze 的限流；作答提交额度给得高，
+// 因为一个班/一场沙龙的家长可能共用同一出口 IP）
+function checkRate(map: Map<string, number[]>, ip: string, limit: number): boolean {
+  const now = Date.now();
+  const dayAgo = now - 24 * 60 * 60 * 1000;
+  const arr = (map.get(ip) ?? []).filter((t) => t > dayAgo);
+  map.set(ip, arr);
+  if (arr.length >= limit) return false;
+  arr.push(now);
+  return true;
+}
+
+app.post("/api/collections", async (c) => {
+  if (!checkRate(collectCreateMap, clientIp(c), CREATE_LIMIT)) {
+    return c.json({ error: "rate_limited" }, 429);
+  }
+  let body: { battery?: unknown; title?: unknown };
+  try {
+    body = await c.req.json();
+  } catch {
+    return c.json({ error: "invalid_json" }, 400);
+  }
+  const battery = Array.isArray(body.battery)
+    ? body.battery
+        .filter((x): x is string => typeof x === "string" && x.length > 0 && x.length <= 64)
+        .slice(0, 50)
+    : [];
+  if (battery.length === 0) {
+    return c.json({ error: "missing_battery" }, 400);
+  }
+  const title =
+    typeof body.title === "string" && body.title.trim() !== ""
+      ? body.title.slice(0, 200)
+      : null;
+  const { id, ownerKey } = await store.createCollection({ battery, title });
+  return c.json({ collectionId: id, ownerKey });
+});
+
+app.post("/api/collections/:id/responses", async (c) => {
+  const id = c.req.param("id");
+  if (!store.isValidId(id)) return c.json({ error: "bad_id" }, 400);
+  const meta = await store.getMeta(id);
+  if (!meta) return c.json({ error: "not_found" }, 404);
+  if (!meta.open) return c.json({ error: "closed" }, 403);
+  if (!checkRate(collectSubmitMap, clientIp(c), SUBMIT_LIMIT)) {
+    return c.json({ error: "rate_limited" }, 429);
+  }
+  // 先按 Content-Length 早拒超大 body，防没有 bodyLimit 时先全量解析进内存
+  const clen = Number(c.req.header("content-length") || 0);
+  if (clen > MAX_PAYLOAD_CHARS + 4096) {
+    return c.json({ error: "payload_too_large" }, 413);
+  }
+  let body: { d?: unknown; idempotencyKey?: unknown };
+  try {
+    body = await c.req.json();
+  } catch {
+    return c.json({ error: "invalid_json" }, 400);
+  }
+  const d = body.d;
+  // d = encodeSession 产出的 base64url 串，原样不透明存储；只做字符集与长度校验
+  if (
+    typeof d !== "string" ||
+    d.length === 0 ||
+    d.length > MAX_PAYLOAD_CHARS ||
+    !/^[A-Za-z0-9_-]+$/.test(d)
+  ) {
+    return c.json({ error: "bad_payload" }, 400);
+  }
+  // 幂等键（可选，前端建议带）：同 id+同 key 已入库则直接视为成功，防超时重传写重复
+  const idem =
+    typeof body.idempotencyKey === "string" &&
+    body.idempotencyKey.length > 0 &&
+    body.idempotencyKey.length <= 128 &&
+    /^[A-Za-z0-9_-]+$/.test(body.idempotencyKey)
+      ? body.idempotencyKey
+      : undefined;
+  try {
+    const r = await store.appendResponse(id, d, idem);
+    return c.json({ ok: true, duplicate: !r.appended });
+  } catch (err) {
+    if (err instanceof store.CollectionFullError) {
+      return c.json({ error: "collection_full" }, 403);
+    }
+    throw err;
+  }
+});
+
+app.get("/api/collections/:id/responses", async (c) => {
+  const id = c.req.param("id");
+  if (!store.isValidId(id)) return c.json({ error: "bad_id" }, 400);
+  const meta = await store.getMeta(id);
+  if (!meta) return c.json({ error: "not_found" }, 404);
+  const auth = c.req.header("authorization") || "";
+  const m = /^Bearer\s+(.+)$/i.exec(auth);
+  const key = m ? m[1].trim() : "";
+  if (!store.verifyOwnerKey(meta, key)) {
+    return c.json({ error: "unauthorized" }, 401);
+  }
+  const responses = await store.listResponses(id);
+  return c.json({
+    collection: {
+      id: meta.id,
+      battery: meta.battery,
+      title: meta.title,
+      createdAt: meta.createdAt,
+      count: responses.length,
+    },
+    responses,
   });
 });
 

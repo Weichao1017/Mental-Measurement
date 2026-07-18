@@ -236,4 +236,11 @@ export interface SessionState {
   responses: Record<string, ScaleResponse>;
   /** 创建时间 */
   startedAt: string;
+  /**
+   * 收集本 id（老师后端回收作答）。仅当来访者从「已开启回收」的作答链接
+   * (/start/?b=...&collect=<id>) 进入时才有；无此字段=默认关，作答只留本机、零上传。
+   */
+  collectionId?: string;
+  /** 已成功上传到收集本的时间（幂等标记，避免重复提交） */
+  uploadedAt?: string;
 }

@@ -236,6 +236,44 @@ export const UI = {
     zh: "复制上方「复制链接 / 二维码」生成的链接，对方打开后会看到完全一样的量表清单，点开始即可作答。链接本身不带任何答题数据，他们的作答只保存在自己的设备上。",
     en: "Copy the link from the button above. When they open it, they'll see the exact same battery and can start. The link contains no answer data — their responses stay on their own device.",
   },
+  // ── 收集本（老师后端回收作答）──
+  start_collect_toggle: {
+    zh: "把作答回收到我的收集本（我作为发起人能看到所有提交）",
+    en: "Collect responses to my inbox (I can see every submission as the organizer)",
+  },
+  start_collect_toggle_hint: {
+    zh: "开启后，来访者答完会自动把作答提交给你；你用下方生成的「看板链接」就能看到所有提交。关闭则不回收，作答只留在对方设备上。",
+    en: "When on, respondents' answers are submitted to you automatically once they finish; open the inbox link below to see them all. When off, nothing is collected — answers stay only on their device.",
+  },
+  start_collect_creating: { zh: "正在创建收集本…", en: "Creating your inbox…" },
+  start_collect_error: {
+    zh: "创建收集本失败，请稍后重试。",
+    en: "Couldn't create the inbox. Please try again.",
+  },
+  start_collect_inbox_title: {
+    zh: "你的看板链接（只给自己保存）",
+    en: "Your inbox link (keep it for yourself)",
+  },
+  start_collect_inbox_desc: {
+    zh: "打开它就能看到所有提交。这条链接 = 你的查看密钥，请妥善保管、不要外发；任何拿到它的人都能看到全部作答。",
+    en: "Open it to see all submissions. This link IS your access key — keep it safe and don't forward it; anyone who has it can see every response.",
+  },
+  start_collect_fill_hint: {
+    zh: "现在下方「复制链接 / 二维码」得到的就是发给来访者的作答链接（已开启回收）。",
+    en: "The Copy link / QR button below now gives you the fill-out link to send to respondents (collection is on).",
+  },
+  start_collect_notice: {
+    zh: "这份问卷由发起人收集作答：你完成后，回答会提交给发起人。",
+    en: "This questionnaire is collected by its organizer: when you finish, your answers are submitted to them.",
+  },
+  start_share_title_collect: {
+    zh: "把作答链接发给来访者（已开启回收）",
+    en: "Send the fill-out link to respondents (collection on)",
+  },
+  start_share_desc_collect: {
+    zh: "复制上方「复制链接 / 二维码」生成的作答链接发给来访者。他们答完后，回答会自动提交到你的收集本，你用看板链接即可查看。请在邀请时让对方知道作答会提交给你。",
+    en: "Copy the fill-out link above and send it to respondents. When they finish, their answers are submitted to your inbox automatically, viewable via your inbox link. Please let them know their answers will be sent to you.",
+  },
   start_empty: {
     zh: "这个链接没有指定要做哪些量表。",
     en: "This link doesn't specify any scales.",
@@ -355,6 +393,68 @@ export const UI = {
     zh: "这份问卷不打分。下面是你的全部回答，确认无误后，用下方「生成链接 / 二维码」把它交给主持人。",
     en: "This questionnaire isn't scored. Below are all your responses — once they look right, use the share button below to send them to the host.",
   },
+  survey_done_desc_collected: {
+    zh: "这份问卷不打分。你的回答已提交给这份问卷的发起人，下面是你刚刚提交的全部回答，供你自己核对。",
+    en: "This questionnaire isn't scored. Your responses have been submitted to the organizer; below are all the answers you just submitted, for your own reference.",
+  },
+  results_collected_banner: {
+    zh: "✓ 你的回答已提交给这份问卷的发起人。",
+    en: "✓ Your responses have been submitted to the organizer.",
+  },
+  results_upload_failed_banner: {
+    zh: "网络似乎不太顺，回答还没能提交给发起人。你可以稍后点这里再试一次，或用下方「把这份结果交给…」把链接手动发过去。",
+    en: "Network hiccup — your responses haven't reached the organizer yet. Try again in a moment, or use the Share section below to send the link manually.",
+  },
+  results_upload_retry: { zh: "重试上传", en: "Retry upload" },
+  results_intro_collected: {
+    zh: "这是你各个维度此刻的状态。你的回答已提交给这份问卷的发起人，下面这些内容供你自己核对与保存。",
+    en: "Here's a snapshot of where each dimension stands right now. Your responses have been submitted to the organizer; what follows is for your own reference.",
+  },
+  results_intro_survey_collected: {
+    zh: "你的回答已提交给这份问卷的发起人。下面是你刚刚提交的全部回答，供你自己核对。",
+    en: "Your responses have been submitted to the organizer. Below are all the answers you just submitted, for your own reference.",
+  },
+  runner_submitting: { zh: "正在提交…", en: "Submitting…" },
+  // ── 老师看板 /inbox ──
+  inbox_loading: { zh: "正在载入收集本…", en: "Loading inbox…" },
+  inbox_nokey_title: { zh: "缺少看板密钥", en: "Missing inbox key" },
+  inbox_nokey_desc: {
+    zh: "这个页面需要用完整的看板链接（含密钥）打开。请使用你创建收集本时保存的那条链接。",
+    en: "This page needs the full inbox link (with its key). Please open the link you saved when you created the collection.",
+  },
+  inbox_error_title: { zh: "打不开收集本", en: "Can't open this inbox" },
+  inbox_error_401: {
+    zh: "密钥不正确。请确认你用的是创建时保存的完整看板链接。",
+    en: "The key is incorrect. Please make sure you're using the full inbox link you saved.",
+  },
+  inbox_error_404: {
+    zh: "找不到这个收集本，可能链接有误或已被删除。",
+    en: "This collection can't be found — the link may be wrong or it was removed.",
+  },
+  inbox_error_generic: {
+    zh: "载入失败，请稍后重试。",
+    en: "Failed to load. Please try again later.",
+  },
+  inbox_home: { zh: "返回首页", en: "Back to home" },
+  inbox_untitled: { zh: "收集本", en: "Collection" },
+  inbox_count_prefix: { zh: "共 ", en: "Total " },
+  inbox_count_suffix: { zh: " 份提交", en: " submissions" },
+  inbox_empty: {
+    zh: "还没有人提交。把作答链接发给来访者，提交会自动出现在这里。",
+    en: "No submissions yet. Share the fill-out link — submissions will appear here automatically.",
+  },
+  inbox_view: { zh: "查看", en: "View" },
+  inbox_back: { zh: "返回列表", en: "Back to list" },
+  inbox_received_prefix: { zh: "提交于 ", en: "Submitted " },
+  inbox_warning_badge: { zh: "⚠ 含警示", en: "⚠ has warnings" },
+  inbox_decode_fail: {
+    zh: "这份数据无法解析（可能版本不匹配）。",
+    en: "This entry can't be parsed (possible version mismatch).",
+  },
+  inbox_privacy_note: {
+    zh: "这些是来访者提交的作答，属敏感个人数据，保存在服务器的收集本中，仅持有本看板密钥者可见。请按机构规范妥善保管，不要转发看板链接。",
+    en: "These are respondents' submitted answers — sensitive personal data stored in the server-side collection, visible only to whoever holds this inbox key. Handle per your organization's norms and don't forward the inbox link.",
+  },
   survey_unanswered: { zh: "未作答", en: "Not answered" },
   survey_extra_note: { zh: "补充", en: "Note" },
   survey_items_unit: { zh: "题", en: "items" },
@@ -433,6 +533,16 @@ export const UI = {
   share_warning_taker: {
     zh: "提示：这个链接只是邀请对方作答，不含任何答题数据；对方的作答只保存在他们自己的设备上。链接较长属正常现象，二维码扫描更方便。",
     en: "Note: This link only invites someone to respond — it carries no answer data, and their responses stay only on their own device. The length is normal; scanning the QR code is more convenient.",
+  },
+  // taker_collect = 已开启回收：对方作答会上传到老师的收集本
+  share_title_taker_collect: { zh: "邀请对方作答的链接", en: "Link to Invite Someone" },
+  share_intro_taker_collect: {
+    zh: "把下面的二维码或链接发给你想邀请的人。对方完成后，回答会自动提交给你，你可在看板里查看。",
+    en: "Send the QR code or link below to whoever you'd like to invite. When they finish, their answers are submitted to you automatically and you can view them in your inbox.",
+  },
+  share_warning_taker_collect: {
+    zh: "提示：这份链接已开启回收——对方提交的回答会上传到服务器由你查看，请在邀请时让对方知情。链接较长属正常现象，二维码扫描更方便。",
+    en: "Note: This link has collection turned on — the answers people submit are uploaded to the server for you to review, so please let them know when you invite them. The length is normal; scanning the QR code is more convenient.",
   },
 
   // ClinicalFlag

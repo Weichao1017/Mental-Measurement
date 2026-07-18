@@ -61,10 +61,10 @@ export const salonWarmup: Scale = {
     },
     {
       index: 4,
-      text: "孩子性别",
-      textEn: "Your child's gender",
+      text: "孩子性别（如有多个孩子可多选）",
+      textEn: "Your child's gender (select all that apply if you have more than one child)",
       dimension: "Q",
-      widget: "buttons",
+      inputType: "multi",
       options: [
         { value: 1, label: "男生", labelEn: "Boy" },
         { value: 2, label: "女生", labelEn: "Girl" },

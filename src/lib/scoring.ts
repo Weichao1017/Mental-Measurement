@@ -18,7 +18,9 @@ export function isItemAnswered(item: ScaleItem, response: ScaleResponse): boolea
     return typeof v === "string" && v.trim() !== "";
   }
   if (kind === "multi") {
-    return (response.multiAnswers?.[item.index]?.length ?? 0) > 0;
+    if ((response.multiAnswers?.[item.index]?.length ?? 0) > 0) return true;
+    // 向后兼容：该题型从单选改多选之前的旧提交把答案存在 answers 里
+    return typeof response.answers[item.index] === "number";
   }
   return typeof response.answers[item.index] === "number";
 }

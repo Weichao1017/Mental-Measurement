@@ -124,7 +124,12 @@ function AnswerValue({
   }
 
   if (kind === "multi") {
-    const vals = response.multiAnswers?.[item.index] ?? [];
+    let vals = response.multiAnswers?.[item.index] ?? [];
+    // 向后兼容：该题型从单选改多选之前的旧提交把答案存在 answers 里，
+    // 回退成单元素数组，保证已收集的作答仍能正常显示（不因改题型而丢显示）
+    if (vals.length === 0 && typeof response.answers[item.index] === "number") {
+      vals = [response.answers[item.index]];
+    }
     return (
       <ul className="space-y-1">
         {vals.map((v) => {

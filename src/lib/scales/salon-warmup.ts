@@ -14,10 +14,9 @@ export const salonWarmup: Scale = {
   slug: "salon-warmup",
   name: "家庭沙龙——家长热身问卷",
   nameEn: "Family Salon — Parent Warm-up Questionnaire",
-  description:
-    "开练前的热身：三个张力场景、平时聊天的样子、换个位置看、你家的台词、两把尺。只聚焦一件事——与孩子的沟通。",
-  descriptionEn:
-    "A warm-up before the salon: three tension scenarios, everyday conversations, a perspective flip, your family's real lines, and two rating scales — all focused on one thing: communicating with your child.",
+  // 卡片小字说明按用户要求留空（不展示）
+  description: "",
+  descriptionEn: "",
   timeFrame: "以你平时的真实情况为准",
   timeFrameEn: "Based on how you actually are day-to-day",
   estimatedMinutes: 7,

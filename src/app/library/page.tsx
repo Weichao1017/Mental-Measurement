@@ -273,9 +273,14 @@ function ScaleCard({
         </div>
       </header>
 
-      <p className="mb-3 flex-1 text-sm leading-relaxed text-brand-700">
-        {pick(scale.description, scale.descriptionEn, lang)}
-      </p>
+      {pick(scale.description, scale.descriptionEn, lang) ? (
+        <p className="mb-3 flex-1 text-sm leading-relaxed text-brand-700">
+          {pick(scale.description, scale.descriptionEn, lang)}
+        </p>
+      ) : (
+        // 描述留空时仍保留 flex-1 占位，维持卡片网格里页脚底部对齐
+        <div className="mb-3 flex-1" aria-hidden />
+      )}
 
       <dl className="grid grid-cols-2 gap-x-3 gap-y-1 text-xs text-brand-500">
         <div>

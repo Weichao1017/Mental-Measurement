@@ -186,9 +186,11 @@ function StartContent() {
                 <div className="font-medium text-ink">
                   {pick(s.name, s.nameEn, lang)}
                 </div>
-                <div className="mt-0.5 text-xs text-brand-500">
-                  {pick(s.description, s.descriptionEn, lang)}
-                </div>
+                {pick(s.description, s.descriptionEn, lang) ? (
+                  <div className="mt-0.5 text-xs text-brand-500">
+                    {pick(s.description, s.descriptionEn, lang)}
+                  </div>
+                ) : null}
                 <div className="mt-1 text-xs text-brand-400">
                   {s.items.length}
                   {t("start_intro_items_unit")} · ~{s.estimatedMinutes}

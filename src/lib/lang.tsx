@@ -456,6 +456,11 @@ export const UI = {
     en: "These are respondents' submitted answers — sensitive personal data stored in the server-side collection, visible only to whoever holds this inbox key. Handle per your organization's norms and don't forward the inbox link.",
   },
   survey_unanswered: { zh: "未作答", en: "Not answered" },
+  // 版本更新提示条
+  update_available: { zh: "问卷已更新", en: "A new version is available" },
+  update_refresh: { zh: "点此刷新", en: "Refresh" },
+  update_dismiss: { zh: "关闭", en: "Dismiss" },
+
   survey_extra_note: { zh: "补充", en: "Note" },
   survey_items_unit: { zh: "题", en: "items" },
   survey_answered_label: { zh: "已答", en: "Answered" },

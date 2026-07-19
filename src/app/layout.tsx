@@ -2,6 +2,7 @@ import type { Metadata, Viewport } from "next";
 import type { ReactNode } from "react";
 import { LangProvider } from "@/lib/lang";
 import LangSwitcher from "@/components/LangSwitcher";
+import VersionCheck from "@/components/VersionCheck";
 import "./globals.css";
 
 export const metadata: Metadata = {
@@ -20,6 +21,7 @@ export default function RootLayout({ children }: { children: ReactNode }) {
     <html lang="zh-Hans">
       <body>
         <LangProvider>
+          <VersionCheck />
           <LangSwitcher />
           {children}
         </LangProvider>

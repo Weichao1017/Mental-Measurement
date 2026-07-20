@@ -9,7 +9,7 @@ import AIAnalysisCard from "@/components/AIAnalysisCard";
 import ClinicalFlagCard from "@/components/ClinicalFlagCard";
 import SurveyAnswersCard from "@/components/SurveyAnswersCard";
 import { getScale } from "@/lib/scales";
-import { scoreScale } from "@/lib/scoring";
+import { scoreScale, parseChildren } from "@/lib/scoring";
 import { loadSession, clearSession } from "@/lib/store";
 import { uploadCurrentSession } from "@/lib/collect";
 import { buildShareUrl, encodeSession } from "@/lib/share";
@@ -382,7 +382,9 @@ function buildClipboardMarkdown(args: {
     // 收集型问卷：逐题列出原始回答（无计分）
     if (scale.isSurvey) {
       const response = session.responses[scale.id];
-      const items = [...scale.items].sort((a, b) => a.index - b.index);
+      // 与页面展示一致：跳过隐藏题（已并入别题的旧题），并按 items 数组顺序
+      // （新题为保护既有数据取了大题号，展示顺序须跟数组走，不能按 index 排）
+      const items = scale.items.filter((i) => !i.hidden);
       items.forEach((item, idx) => {
         const q = pick(item.text, item.textEn, lang);
         lines.push(`**${idx + 1}. ${q}**`);
@@ -401,6 +403,40 @@ function buildClipboardMarkdown(args: {
               lines.push(`- ${opt ? pick(opt.label, opt.labelEn, lang) : v}`);
             }
           }
+        } else if (kind === "children") {
+          // children 的数据是 textAnswers 里的 JSON，须解析成「孩子N：年龄·性别」，
+          // 否则会既导不出内容、又把原始 JSON 漏进「补充」
+          let rows = parseChildren(response?.textAnswers?.[item.index]);
+          if (rows.length === 0 && item.childrenLegacy) {
+            const { ageIndex, genderIndex } = item.childrenLegacy;
+            const la = response?.answers?.[ageIndex];
+            const lg =
+              response?.multiAnswers?.[genderIndex]?.[0] ??
+              response?.answers?.[genderIndex];
+            if (typeof la === "number" || typeof lg === "number") {
+              rows = [
+                {
+                  age: typeof la === "number" ? la : null,
+                  gender: typeof lg === "number" ? lg : null,
+                },
+              ];
+            }
+          }
+          if (rows.length === 0) {
+            lines.push(lang === "en" ? "_(not answered)_" : "_（未作答）_");
+          } else {
+            rows.forEach((c, i) => {
+              const opt = options.find((o) => o.value === c.gender);
+              const parts: string[] = [];
+              if (typeof c.age === "number") parts.push(`${c.age}${item.unit ?? ""}`);
+              if (opt) parts.push(pick(opt.label, opt.labelEn, lang));
+              lines.push(
+                `- ${lang === "en" ? "Child " : "孩子 "}${i + 1}: ${
+                  parts.join(" · ") || "—"
+                }`
+              );
+            });
+          }
         } else {
           const raw = response?.answers?.[item.index];
           if (typeof raw !== "number") {
@@ -412,8 +448,9 @@ function buildClipboardMarkdown(args: {
             lines.push(opt ? pick(opt.label, opt.labelEn, lang) : String(raw));
           }
         }
-        // choice/multi 的自由补充
-        if (kind !== "text") {
+        // 自由补充：仅 choice/multi 才有。必须排除 children（其数据本身就是
+        // textAnswers 里的 JSON，否则会把原始 JSON 当补充导出来）
+        if (kind === "choice" || kind === "multi") {
           const extra = response?.textAnswers?.[item.index];
           if (extra && extra.trim() !== "") {
             lines.push(`> ${lang === "en" ? "Note" : "补充"}: ${extra}`);

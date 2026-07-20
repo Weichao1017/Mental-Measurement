@@ -45,6 +45,7 @@ export default function SurveyAnswersCard({ scale, response }: Props) {
       <div className="space-y-5">
         {items.map((item, idx) => {
           const answered = isItemAnswered(item, response);
+          const kind = item.inputType ?? "choice";
           const extraText = response.textAnswers?.[item.index];
           return (
             <div key={item.index}>
@@ -76,8 +77,10 @@ export default function SurveyAnswersCard({ scale, response }: Props) {
                         {t("survey_unanswered")}
                       </span>
                     )}
-                    {/* choice/multi 题的自由补充 */}
-                    {item.inputType !== "text" &&
+                    {/* 自由补充：仅 choice/multi 题才有。
+                        必须排除 children——它的数据本身就存在 textAnswers（JSON 串），
+                        若不排除会把原始 JSON 当「补充」原样打印出来。 */}
+                    {(kind === "choice" || kind === "multi") &&
                     typeof extraText === "string" &&
                     extraText.trim() !== "" ? (
                       <p className="mt-1.5 whitespace-pre-wrap break-words rounded-lg bg-cream/70 px-3 py-2 text-sm leading-relaxed text-ink">

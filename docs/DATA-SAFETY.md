@@ -9,7 +9,7 @@
 |---|---|---|
 | `ash-root:/www/wwwroot/assessment.ai1017.com/api/data/collections/` | **生产数据** | `<id>.json` = 收集本元信息（含 ownerKey 的 sha256）；`<id>.ndjson` = 作答，一行一份 |
 | `ash-root:/www/backup/mm-collections-snapshots/` | **服务器备份** | 每 15 分钟一个 tar.gz，保留约 30 天 |
-| 本机 `~/Downloads/家庭沙龙问卷备份-<时间>/` | **离线副本** | 原始数据 + 可读存档（md/csv）。防「服务器整台没了」 |
+| 本机 `~/mm-问卷备份/` | **离线副本（每 2 小时自动拉取）** | `latest/` 最新原始数据、`snapshots/` 历史快照（留 120 份）、`可读存档/` md+csv、`pull.log` 日志 |
 
 作答本身是 base64url 编码的 payload（`d` 字段），解码后才是逐题答案。
 
@@ -67,14 +67,29 @@ ssh ash-root 'cp -r /www/wwwroot/assessment.ai1017.com/api/data/collections /tmp
    **题号只增不删、不重排**；要下线某题就设 `hidden: true` 保留位置，
    否则已收集数据会整体错位。新题必须取比现有全部题号更大的 index。
 
-## 五、把数据拉到本机（建议每次沙龙前后各做一次）
+## 五、本机自动离线备份（已装好，无需手动）
+
+- 脚本：`~/bin/mm-pull-backup.sh`
+- 定时：LaunchAgent `~/Library/LaunchAgents/com.weichao.mm-questionnaire-backup.plist`
+  → **每 2 小时**跑一次 + **每次登录**跑一次（Mac 睡眠错过的，唤醒后补跑）
+- 落地：`~/mm-问卷备份/`（`latest/` + `snapshots/` 留 120 份 + `可读存档/` + `pull.log`）
+- 拉取失败（网络/SSH 闪断）会自动重试 3 次；仍失败则**保留既有备份不动**并记 FAIL 日志
+
+> ⚠️ 备份根目录刻意**不放** `~/Documents`、`~/Downloads`、`~/Desktop`：
+> 这三个是 macOS TCC 受保护目录，launchd 后台任务在里面会「手动能跑、定时静默失败」
+> （已实际踩到并验证）。
+
+随时手动补一次 / 查状态：
 
 ```bash
-DIR=~/Downloads/家庭沙龙问卷备份-$(date +%Y%m%d-%H%M); mkdir -p "$DIR/raw"
-ssh ash-root 'cd /www/wwwroot/assessment.ai1017.com/api/data && tar czf - collections' > "$DIR/raw/collections-live.tar.gz"
-tar xzf "$DIR/raw/collections-live.tar.gz" -C "$DIR/raw/"
-wc -l "$DIR/raw/collections/"*.ndjson
+~/bin/mm-pull-backup.sh                 # 立刻拉一次
+tail -5 ~/mm-问卷备份/pull.log           # 看最近几次结果
+launchctl list | grep mm-questionnaire  # 看定时任务是否在册（第二列 0 = 上次成功）
 ```
 
-可读存档（md 全文 + csv 汇总）的生成脚本见本仓库历史提交中的导出流程，
-或直接让 Claude 重新导出一次。
+重新生成可读存档（md 全文 + csv 汇总）：
+
+```bash
+cd "/Users/weichaowang/Ash for Chinese/Mental-Measurement"
+npx tsx scripts/export-responses.mts ~/mm-问卷备份/latest ~/mm-问卷备份/可读存档
+```

@@ -79,8 +79,15 @@ export interface CardModel {
   childQuote: string | null;
   /** 语料3(15)：最想听懂的事 */
   wantToUnderstand: string | null;
-  /** 场景题「我实际大概会说」自由填写（家长自己的话） */
+  /** 场景题「我实际大概会说」自由填写（家长自己的话）——首个非空 */
   ownWords: string | null;
+  /** 全部场景「我实际会说」自由填写（喂给 AI 的关键信号） */
+  ownWordsAll: Array<{ scenario: number; text: string }>;
+  /**
+   * 自由文本里出现了情绪命名 / 反映式邀请 —— 脚本铁律「『我实际会说』的填写内容
+   * 优先于选项」。据此把楼层往上修正：他自己的话已经在三楼，别被按钮压低。
+   */
+  empathicSignal: boolean;
   /** 两把尺 */
   importance: number | null;
   confidence: number | null;
@@ -102,6 +109,17 @@ function cleanText(v: unknown): string | null {
 
 function num(v: unknown): number | null {
   return typeof v === "number" && Number.isFinite(v) ? v : null;
+}
+
+// 情绪命名词 + 反映式邀请：判断家长的「我实际会说」是否已在同理层（三楼）
+const EMOTION_WORDS =
+  /委屈|难过|伤心|害怕|[有很]?怕|生气|愤怒|失望|难受|不舒服|滋味|感受|情绪|心里|烦|无助|孤单|孤独|压力|紧张|尴尬|丢脸|憋屈|挫败|着急|焦虑|担心|不安/;
+const REFLECT =
+  /后来呢|想(多|再)?说说吗?|愿意(多|再)?说|你(是不是|好像|一定|大概|可能|觉得|愿意)|你怎么(想|看|觉)|听(起来|上去)你|多(跟我)?说|说说看|描述一下|我(在这|陪你|听着|在听)|你说说|什么感[觉受]/;
+
+function isEmpathic(text: string | null): boolean {
+  if (!text) return false;
+  return EMOTION_WORDS.test(text) || REFLECT.test(text);
 }
 
 /** 从一份 salon-warmup 作答构建反馈卡模型；response 缺失返回 null */
@@ -183,7 +201,18 @@ export function buildCardModel(response: ScaleResponse | undefined): CardModel |
   // ---- 5) 语料（他自己的话）----
   const childQuote = cleanText(x[14]);
   const wantToUnderstand = cleanText(x[15]);
-  const ownWords = cleanText(x[6]) ?? cleanText(x[7]) ?? cleanText(x[8]);
+  const ownWordsAll: Array<{ scenario: number; text: string }> = [];
+  for (const idx of [6, 7, 8]) {
+    const t = cleanText(x[idx]);
+    if (t) ownWordsAll.push({ scenario: idx - 5, text: t });
+  }
+  const ownWords = ownWordsAll[0]?.text ?? null;
+
+  // 自由文本优先于选项（脚本铁律）：他自己的话若已在同理层，把火种往上修正到至少三楼
+  const empathicSignal = ownWordsAll.some((w) => isEmpathic(w.text));
+  if (empathicSignal && defaultFloor !== null && defaultFloor < 3) {
+    if (sparkFloor === null || sparkFloor < 3) sparkFloor = 3;
+  }
 
   return {
     nickname: cleanText(x[2]) ?? cleanText(x[1]) ?? "这位家长",
@@ -205,6 +234,8 @@ export function buildCardModel(response: ScaleResponse | undefined): CardModel |
     childQuote,
     wantToUnderstand,
     ownWords,
+    ownWordsAll,
+    empathicSignal,
     importance: num(a[17]),
     confidence: num(a[18]),
   };

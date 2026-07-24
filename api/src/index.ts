@@ -340,6 +340,145 @@ app.get("/api/collections/:id/responses", async (c) => {
   });
 });
 
+// ============================================================================
+// 家长个人反馈卡 · 生成式 1v1（父亲聆听沙龙）
+//   POST /api/feedback-card  —— 读结构化画像 + 家长原话 → DeepSeek 流式生成个性化分析
+// 安全：担心状况(问卷16)、身份了解(问卷5) 由前端剔除、绝不进本请求；这里只谈聆听行为。
+// ============================================================================
+const CARD_LIMIT = Number(process.env.FEEDBACK_CARD_LIMIT_PER_DAY ?? 120);
+const cardRateMap = new Map<string, number[]>();
+
+interface CardProfile {
+  nickname?: string;
+  childName?: string;
+  persona?: string | null;
+  personaSecondary?: string | null;
+  votes?: Record<string, number>;
+  behaviorFloor?: number | null;
+  attentionFloor?: number | null;
+  defaultFloor?: number | null;
+  sparkFloor?: number | null;
+  empathicSignal?: boolean;
+  dialogueField?: number | null;
+  perspectiveGap?: number | null;
+  guessScore?: number | null;
+  selfScore?: number | null;
+  habit?: string | null;
+  importance?: number | null;
+  confidence?: number | null;
+  ownWords?: Array<{ scenario: number; text: string }>;
+  childQuote?: string | null;
+  wantToUnderstand?: string | null;
+}
+
+const FLOOR_NAME = ["", "一楼·下载式", "二楼·事实式", "三楼·同理式", "四楼·生成式"];
+
+app.post("/api/feedback-card", async (c) => {
+  if (!checkRate(cardRateMap, clientIp(c), CARD_LIMIT)) {
+    return c.json({ error: "rate_limited", message: "今日生成次数已达上限，请稍后再试。" }, 429);
+  }
+  let body: { lang?: string; profile?: CardProfile };
+  try {
+    body = await c.req.json();
+  } catch {
+    return c.json({ error: "invalid_json" }, 400);
+  }
+  const p = body.profile;
+  if (!p || typeof p !== "object") return c.json({ error: "missing_profile" }, 400);
+  const lang = body.lang === "en" ? "en" : "zh";
+
+  const cut = (s: unknown, n = 400) =>
+    typeof s === "string" ? s.slice(0, n) : "";
+  const childName = cut(p.childName, 20) || "孩子";
+  const lines: string[] = [];
+  lines.push(`称呼：${cut(p.nickname, 30) || "这位家长"}；孩子的称呼：${childName}`);
+  if (p.persona)
+    lines.push(
+      `问卷选项算出的默认接法：主型「${cut(p.persona, 12)}」${
+        p.personaSecondary ? `、副型「${cut(p.personaSecondary, 12)}」` : ""
+      }（这是初判，仅供参考）`
+    );
+  if (typeof p.defaultFloor === "number" && p.defaultFloor >= 1)
+    lines.push(`按选项定的默认聆听层：${FLOOR_NAME[p.defaultFloor] ?? p.defaultFloor}`);
+  if (typeof p.sparkFloor === "number" && p.sparkFloor >= 2)
+    lines.push(`已探到的更高层（火种）：${FLOOR_NAME[p.sparkFloor] ?? p.sparkFloor}`);
+  if (p.empathicSignal)
+    lines.push(
+      "★重要信号：他在「我实际会说」里，已经出现命名情绪 / 邀请孩子多说的话——按脚本铁律「自由填写优先于选项」，他其实已经摸到同理层（三楼），别被选项压低，务必点亮这是他的火种。"
+    );
+  if (Array.isArray(p.ownWords) && p.ownWords.length)
+    lines.push(
+      `他在场景里写下「我实际会说」的原话：\n${p.ownWords
+        .map((w) => `　· 场景${w.scenario}：「${cut(w.text, 300)}」`)
+        .join("\n")}`
+    );
+  if (p.childQuote) lines.push(`孩子最近让他不知道怎么接的一句：「${cut(p.childQuote, 300)}」`);
+  if (p.wantToUnderstand) lines.push(`他最想听懂孩子的：「${cut(p.wantToUnderstand, 200)}」`);
+  if (p.habit) lines.push(`他猜孩子最想改掉他的接话习惯：${cut(p.habit, 40)}`);
+  if (typeof p.selfScore === "number" && typeof p.guessScore === "number")
+    lines.push(
+      `换位：他给自己「会听」打 ${p.selfScore} 分，猜孩子会给他 ${p.guessScore} 分${
+        typeof p.perspectiveGap === "number" && p.perspectiveGap >= 2
+          ? "（敢往低了猜，已在换位）"
+          : ""
+      }`
+    );
+  if (typeof p.importance === "number")
+    lines.push(`两把尺：与孩子沟通的重要性 ${p.importance}/10；能练成的把握 ${p.confidence ?? "?"}/10`);
+
+  const system = lang === "en" ? CARD_SYSTEM_EN : CARD_SYSTEM_ZH;
+  const user =
+    (lang === "en"
+      ? "Here is this father's questionnaire profile and his own words:\n\n"
+      : "以下是这位父亲的问卷画像与他自己写下的原话：\n\n") + lines.join("\n");
+
+  return streamSSE(c, async (stream) => {
+    try {
+      const completion = (await client.chat.completions.create({
+        model: MODEL,
+        max_tokens: Math.min(MAX_TOKENS, 2200),
+        messages: [
+          { role: "system", content: system },
+          { role: "user", content: user },
+        ],
+        stream: true,
+        ...({ thinking: { type: "disabled" } } as object),
+      })) as AsyncIterable<{
+        choices?: Array<{ delta?: { content?: string }; finish_reason?: string | null }>;
+      }>;
+      for await (const chunk of completion) {
+        const t = chunk.choices?.[0]?.delta?.content;
+        if (t) await stream.writeSSE({ event: "chunk", data: JSON.stringify({ text: t }) });
+        if (chunk.choices?.[0]?.finish_reason)
+          await stream.writeSSE({ event: "done", data: JSON.stringify({ ok: true }) });
+      }
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : String(err);
+      console.error("[feedback-card] deepseek error:", msg);
+      await stream.writeSSE({ event: "error", data: JSON.stringify({ error: "upstream", message: msg }) });
+    }
+  });
+});
+
+const CARD_SYSTEM_ZH = `你是一位儿童发展与家庭系统取向的资深工作坊主持人，受过 Scharmer《U型理论》聆听训练。你在为一位参加「父亲聆听沙龙」的父亲写一份一对一的个性化反馈——不是测评报告，是一位懂行的前辈看完他的问卷后，对他说的一段既专业又贴心的话。
+
+对象：单亲爸爸，孩子 10–15 岁，主题是练习听懂、接住孩子的话。
+
+写作要求：
+- 语气专业、具体、有洞察、有温度，像一位信得过的前辈。不油腻、不空泛、不说教、不堆砌比喻——尤其别反复用「接球」这个词（整段最多出现一次，最好一次都不用）。用第二人称「你」。中文，约 450–650 字，分 3–4 个自然段，不加标题、不用列表符号，直接开始，不要「你好」之类开场白。
+- 用 U 型理论的四层聆听（下载式/事实式/同理式/生成式）给他准确定位，但**以他自己写下的原话为准，不要被问卷选项压低**：如果他在「我实际会说」里已经在命名孩子的情绪、在邀请孩子多说，那他其实已经摸到同理层（三楼）——明确、笃定地点出这是他的「火种」，是他身上最值钱、最该被看见的地方。若选项与原话矛盾，相信原话。
+- 至少引用他自己的一句原话，落到具体，不要泛泛而谈。
+- 给一到两个切中要害、当晚就能用、也能带回家的具体练习，扣住他的真实情况（他的把握分数、他猜孩子想改的习惯、他最想听懂的事）。**不要假设现场会角色扮演孩子**。
+- 依据可含 Gottman 情绪教练（先接住情绪、再解决问题）、Gordon 父母效能训练的「沟通路障」、动机访谈；引用要专业、克制、不掉书袋。
+
+硬约束：只谈聆听与沟通行为，绝不推测或提及孩子的性别、家庭结构、身份认同等任何身份信息；不虚构问卷里没有的事实；不下临床诊断。`;
+
+const CARD_SYSTEM_EN = `You are a seasoned family-workshop facilitator grounded in child development, family-systems thinking, and Scharmer's Theory U listening. Write a personalized 1:1 note to a father who took a "fathers' listening salon" questionnaire — not a report, but what a wise, knowledgeable mentor would say after reading his answers.
+
+Audience: single fathers, children aged 10–15; theme is learning to truly hear and hold their child's words.
+
+Requirements: professional, specific, insightful, warm; second person; ~350–500 words; 3–4 paragraphs, no headings or bullet lists, start directly. Locate him on Theory U's four levels of listening (downloading / factual / empathic / generative), but **trust his own written words over the multiple-choice options** — if his "what I'd actually say" already names the child's feeling or invites more, he has reached the empathic level; name that as his spark. Quote at least one of his own lines. Give one or two incisive, doable practices tied to his specifics; do NOT assume any on-site child role-play. Ground lightly in Gottman emotion coaching, Gordon's roadblocks, and motivational interviewing. Hard limits: discuss only listening/communication behavior — never infer or mention the child's gender, family structure, or identity; invent no facts; give no clinical diagnosis.`;
+
 function buildSystemPrompt(lang: "zh" | "en"): string {
   if (lang === "en") return SYSTEM_PROMPT_EN;
   return SYSTEM_PROMPT_ZH;

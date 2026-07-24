@@ -14,8 +14,9 @@ interface Props {
    *  - host：收集型问卷把「含回答」的链接交给家庭沙龙主持人
    *  - taker：/start 把「空白邀请链接」（不含任何答案）发给来访者去作答
    *  - taker_collect：同 taker，但已开启回收——对方作答会上传到老师的收集本
+   *  - card：老师把某位家长的「个人反馈卡」二维码/链接发给TA本人
    */
-  audience?: "therapist" | "host" | "taker" | "taker_collect";
+  audience?: "therapist" | "host" | "taker" | "taker_collect" | "card";
 }
 
 const AUDIENCE_KEYS = {
@@ -26,6 +27,11 @@ const AUDIENCE_KEYS = {
     title: "share_title_taker_collect",
     intro: "share_intro_taker_collect",
     warning: "share_warning_taker_collect",
+  },
+  card: {
+    title: "share_title_card",
+    intro: "share_intro_card",
+    warning: "share_warning_card",
   },
 } as const;
 

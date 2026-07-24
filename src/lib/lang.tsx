@@ -444,6 +444,16 @@ export const UI = {
     en: "No submissions yet. Share the fill-out link — submissions will appear here automatically.",
   },
   inbox_view: { zh: "查看", en: "View" },
+  inbox_card_btn: { zh: "反馈卡", en: "Card" },
+  share_title_card: { zh: "给TA的个人反馈卡", en: "Personal Feedback Card" },
+  share_intro_card: {
+    zh: "把下面的二维码或链接发给这位家长，TA打开就是自己的个人反馈卡。数据完全包含在链接里，没有上传任何服务器。",
+    en: "Send this QR code or link to the parent — it opens their personal feedback card. Data is fully contained in the link; nothing is uploaded.",
+  },
+  share_warning_card: {
+    zh: "提示：链接包含这位家长的问卷作答与反馈内容，请只发给TA本人。",
+    en: "Note: The link contains this parent's questionnaire responses and feedback. Send it only to them.",
+  },
   inbox_back: { zh: "返回列表", en: "Back to list" },
   inbox_received_prefix: { zh: "提交于 ", en: "Submitted " },
   inbox_warning_badge: { zh: "⚠ 含警示", en: "⚠ has warnings" },

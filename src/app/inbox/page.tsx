@@ -4,6 +4,7 @@ import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import Container from "@/components/Container";
 import SessionView from "@/components/SessionView";
+import ShareDialog from "@/components/ShareDialog";
 import { fetchCollection, type CollectionInbox } from "@/lib/collect";
 import { decodeRawSession } from "@/lib/decodeSession";
 import { CONCERN_OPTIONS } from "@/lib/scales";
@@ -22,6 +23,8 @@ export default function InboxPage() {
     | { kind: "ok"; data: CollectionInbox }
   >({ kind: "loading" });
   const [selected, setSelected] = useState<number | null>(null);
+  // 给某份提交生成「反馈卡」二维码。卡链接只带该份 #d=，绝不带看板密钥 c/k。
+  const [cardFor, setCardFor] = useState<number | null>(null);
 
   useEffect(() => {
     const h = window.location.hash.replace(/^#/, "");
@@ -139,6 +142,7 @@ export default function InboxPage() {
               d={resp.d}
               receivedAt={resp.receivedAt}
               onOpen={() => setSelected(i)}
+              onCard={() => setCardFor(i)}
             />
           ))}
         </ul>
@@ -147,6 +151,16 @@ export default function InboxPage() {
       <p className="mt-8 border-t border-brand-200 pt-4 text-xs leading-relaxed text-brand-400">
         {t("inbox_privacy_note")}
       </p>
+
+      {/* 反馈卡二维码：链接只含该份提交的 #d=（自包含），绝不携带看板密钥 */}
+      {cardFor !== null && responses[cardFor] ? (
+        <ShareDialog
+          url={`${window.location.origin}/card/#d=${responses[cardFor].d}`}
+          open
+          onClose={() => setCardFor(null)}
+          audience="card"
+        />
+      ) : null}
     </Container>
   );
 }
@@ -156,14 +170,23 @@ function InboxRow({
   d,
   receivedAt,
   onOpen,
+  onCard,
 }: {
   index: number;
   d: string;
   receivedAt: string;
   onOpen: () => void;
+  onCard: () => void;
 }) {
   const t = useT();
   const decoded = useMemo(() => decodeRawSession(d), [d]);
+  // 填写人昵称（昵称 > 微信名）：老师发反馈卡时得知道这是谁的
+  const respondentName = useMemo(() => {
+    const resp = decoded?.results.find((r) => r.scaleId === "salon-warmup")?.response;
+    const x = resp?.textAnswers ?? {};
+    const name = (x[2] ?? x[1] ?? "").trim();
+    return name || null;
+  }, [decoded]);
   const concernLabels = useMemo(() => {
     if (!decoded) return [];
     return decoded.payload.c
@@ -181,7 +204,10 @@ function InboxRow({
       </span>
       <div className="min-w-0 flex-1">
         <div className="flex flex-wrap items-baseline gap-2">
-          <span className="text-sm text-ink">
+          {respondentName ? (
+            <span className="text-sm font-medium text-ink">{respondentName}</span>
+          ) : null}
+          <span className="text-sm text-brand-500">
             {t("inbox_received_prefix")}
             {formatDate(receivedAt)}
           </span>
@@ -200,6 +226,9 @@ function InboxRow({
           <div className="mt-0.5 text-xs text-rose-600">{t("inbox_decode_fail")}</div>
         ) : null}
       </div>
+      <button type="button" onClick={onCard} className="btn-ghost shrink-0">
+        {t("inbox_card_btn")}
+      </button>
       <button type="button" onClick={onOpen} className="btn-ghost shrink-0">
         {t("inbox_view")}
       </button>

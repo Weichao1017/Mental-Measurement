@@ -29,7 +29,7 @@ const PERSONA_COPY: Record<
     instinct:
       "这背后是想保护孩子的本能——总觉得先有真相，才好出手。只是审讯灯一亮，孩子往往就不往下说了。",
     practice:
-      "今晚试试把问号先收起来。第一句不问「为什么」，改成先说出TA的感受——真相不会跑，孩子的话头会。",
+      "今天下午试试把问号先收起来。第一句不问「为什么」，改成先说出TA的感受——真相不会跑，孩子的话头会。",
   },
   dean: {
     name: "教导主任",
@@ -37,7 +37,7 @@ const PERSONA_COPY: Record<
     reveal: "孩子一开口，你已经听出了「问题」，道理和要求跟着就到。",
     instinct:
       "这背后是怕孩子走偏的心——急着把方向盘掰回来。道理都对，只是道理一出口，孩子的后半句就咽了回去。",
-    practice: "今晚把道理留到最后。第一句先接住人：「这事让你挺不舒服的吧。」——人被接住了，道理才进得去。",
+    practice: "今天下午把道理留到最后。第一句先接住人：「这事让你挺不舒服的吧。」——人被接住了，道理才进得去。",
   },
   extinguisher: {
     name: "灭火器",
@@ -46,7 +46,7 @@ const PERSONA_COPY: Record<
     instinct:
       "这背后是见不得孩子难受——有时也是怕自己接不住。只是「没事」说出口，孩子的情绪就被先关了灯。",
     practice:
-      "今晚别急着说「没事」。孩子要的不是火被扑灭，是有人陪TA在事里待一会儿——先说出TA的感受，再等一等。",
+      "今天下午别急着说「没事」。孩子要的不是火被扑灭，是有人陪TA在事里待一会儿——先说出TA的感受，再等一等。",
   },
   repairman: {
     name: "维修工",
@@ -55,14 +55,14 @@ const PERSONA_COPY: Record<
     instinct:
       "这是爱得实干：问题没了，痛苦就该没了。只是孩子有时要的不是扳手，是有人先看见TA手上的伤。",
     practice:
-      "今晚练的就是把顺序倒过来：先听懂，再修理。等孩子把话说完、情绪落了地，再问「需要我帮你想想办法吗」。",
+      "今天下午练的就是把顺序倒过来：先听懂，再修理。等孩子把话说完、情绪落了地，再问「需要我帮你想想办法吗」。",
   },
   catcher: {
     name: "接球手",
     tagline: "先听见情绪，再把话头还给孩子",
     reveal: "你会先接住孩子的情绪，再把话头还给TA。",
-    instinct: "你相信「被听见」本身就是帮助——这正是今晚全场要练的东西。",
-    practice: "今晚请你把自己的听法示范给大家：当观察员，帮同组的家长看见——一句话被听见之后，孩子会怎样。",
+    instinct: "你相信「被听见」本身就是帮助——这正是今天下午全场要练的东西。",
+    practice: "今天下午请你把自己的听法示范给大家：当观察员，帮同组的家长看见——一句话被听见之后，孩子会怎样。",
   },
 };
 
@@ -291,12 +291,12 @@ function RuleProse({ model: m }: { model: CardModel }) {
           {m.empathicSignal
             ? "你在「我实际会说」里写下的那句，其实已经在说孩子的感受了——"
             : "你说过，跟孩子聊到深处时你会被TA的感受带进去——"}
-          {FLOOR_LABELS[m.sparkFloor]}的门，你早就摸到过。今晚练的不是新东西，是让你已经会的那部分先出手。
+          {FLOOR_LABELS[m.sparkFloor]}的门，你早就摸到过。今天下午练的不是新东西，是让你已经会的那部分先出手。
         </p>
       ) : null}
       {m.dialogueField === 5 ? (
         <p>
-          你写到，最近想不起一次超过十分钟的对话。那今晚你的目标最清楚，也最不难：不急着上楼，先约一场十分钟的对话，聊什么都行。
+          你写到，最近想不起一次超过十分钟的对话。那今天下午你的目标最清楚，也最不难：不急着上楼，先约一场十分钟的对话，聊什么都行。
         </p>
       ) : null}
     </div>
@@ -396,7 +396,7 @@ function QuoteSection({ model: m }: { model: CardModel }) {
 
 function PracticeSection({ model: m }: { model: CardModel }) {
   return (
-    <Section no="04" title={m.isCatcherStar ? "今晚，也请你出场" : "今晚，只练一件事"}>
+    <Section no="04" title={m.isCatcherStar ? "今天下午，也请你出场" : "今天下午，只练一件事"}>
       {!m.isCatcherStar ? (
         <>
           <div className="mb-4 space-y-2">
@@ -427,15 +427,15 @@ function PracticeSection({ model: m }: { model: CardModel }) {
         {m.dialogueField === 5 ? (
           <>回家第一步：这周留意一次{m.childName}主动开口的时刻，记下TA说的第一句话——先别急着接好，先听见。</>
         ) : m.isCatcherStar ? (
-          <>今晚请你把自己的听法示范给同组的家长——你已经会的，值得被更多人看见。</>
+          <>今天下午请你把自己的听法示范给同组的家长——你已经会的，值得被更多人看见。</>
         ) : (
-          <>今晚练的这一步，回家就从{m.childName}的下一句话开始用。</>
+          <>今天下午练的这一步，回家就从{m.childName}的下一句话开始用。</>
         )}
       </p>
 
       {m.confidence !== null ? (
         <p className="mt-3 text-sm leading-relaxed text-brand-500">
-          你给「能练成」的把握打了 {m.confidence} 分。今晚不求变成 10 分——只要让它加 1，就够了。
+          你给「能练成」的把握打了 {m.confidence} 分。今天下午不求变成 10 分——只要让它加 1，就够了。
         </p>
       ) : null}
     </Section>

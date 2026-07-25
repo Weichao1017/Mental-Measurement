@@ -75,7 +75,14 @@ const FLOOR_COPY: Record<1 | 2 | 3 | 4, { name: string; short: string; desc: str
 
 const FLOOR_LABELS = ["", "一楼", "二楼", "三楼", "四楼"];
 
-export default function FeedbackCard({ model }: { model: CardModel }) {
+export default function FeedbackCard({
+  model,
+  bakedAnalysis,
+}: {
+  model: CardModel;
+  /** 预先写好、烘焙进链接的个性化分析（有则直接渲染，不调 AI） */
+  bakedAnalysis?: string;
+}) {
   const m = model;
   const persona = m.persona ? PERSONA_COPY[m.persona] : null;
 
@@ -112,12 +119,15 @@ export default function FeedbackCard({ model }: { model: CardModel }) {
         </Section>
       ) : null}
 
-      {/* 生成式 1v1 分析（核心）——AI 流式，失败回退规则文案 */}
+      {/* 个性化 1v1 分析（核心）。烘焙分析优先直接渲染；否则 AI 流式，失败回退规则文案 */}
       <Section no="02" title="为你细读之后">
-        <GenerativeAnalysis
-          model={m}
-          fallback={<RuleProse model={m} />}
-        />
+        {bakedAnalysis ? (
+          <div className="prose-card space-y-3 leading-relaxed text-brand-800">
+            <ReactMarkdown>{bakedAnalysis}</ReactMarkdown>
+          </div>
+        ) : (
+          <GenerativeAnalysis model={m} fallback={<RuleProse model={m} />} />
+        )}
       </Section>
 
       {/* 他自己写下的话 */}

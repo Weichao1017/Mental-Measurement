@@ -17,7 +17,7 @@ export default function CardPage() {
     | { kind: "loading" }
     | { kind: "empty" }
     | { kind: "invalid" }
-    | { kind: "ok"; model: CardModel }
+    | { kind: "ok"; model: CardModel; baked?: string }
   >({ kind: "loading" });
 
   useEffect(() => {
@@ -37,7 +37,9 @@ export default function CardPage() {
       setState({ kind: "invalid" });
       return;
     }
-    setState({ kind: "ok", model });
+    // 预烘焙的个性化分析（#a=<base64url utf-8>）；解不出就走 AI/规则
+    const baked = readBakedAnalysis(window.location.hash);
+    setState({ kind: "ok", model, baked });
   }, []);
 
   if (state.kind === "loading") {
@@ -68,7 +70,25 @@ export default function CardPage() {
 
   return (
     <Container size="lg">
-      <FeedbackCard model={state.model} />
+      <FeedbackCard model={state.model} bakedAnalysis={state.baked} />
     </Container>
   );
+}
+
+/** 从 hash 读 a=<base64url(UTF-8)> 并解码为文本；无 / 解码失败返回 undefined */
+function readBakedAnalysis(hash: string): string | undefined {
+  const h = hash.startsWith("#") ? hash.slice(1) : hash;
+  const m = /(?:^|&)a=([^&]+)/.exec(h);
+  if (!m) return undefined;
+  try {
+    let b64 = decodeURIComponent(m[1]).replace(/-/g, "+").replace(/_/g, "/");
+    while (b64.length % 4) b64 += "=";
+    const bin = atob(b64);
+    const bytes = new Uint8Array(bin.length);
+    for (let i = 0; i < bin.length; i++) bytes[i] = bin.charCodeAt(i);
+    const s = new TextDecoder().decode(bytes).trim();
+    return s || undefined;
+  } catch {
+    return undefined;
+  }
 }

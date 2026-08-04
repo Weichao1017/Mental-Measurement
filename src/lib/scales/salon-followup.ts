@@ -14,7 +14,7 @@ import type { Scale } from "../types";
 export const salonFollowup: Scale = {
   id: "salon-followup",
   slug: "salon-followup",
-  name: "家庭沙龙 · 下一场 & 这次反馈",
+  name: "家庭沙龙 · 回访反馈",
   description:
     "沙龙后的小回访：这次的感受，以及你想要的下一场——什么形式、聊什么、什么时间。",
   timeFrame: "凭你此刻的真实想法",
@@ -36,7 +36,7 @@ export const salonFollowup: Scale = {
       widget: "slider",
       section: { title: "这次沙龙的感受" },
       options: [
-        { value: 1, label: "1", short: "没太多收获" },
+        { value: 1, label: "1", short: "毫无收获" },
         { value: 2, label: "2" },
         { value: 3, label: "3" },
         { value: 4, label: "4" },

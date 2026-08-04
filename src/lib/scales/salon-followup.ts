@@ -30,11 +30,13 @@ export const salonFollowup: Scale = {
   items: [
     // ============ 这次沙龙的感受 ============
     {
+      // 旧「整体打分」题：已被「推荐意愿」题(index 9)取代。保留在题库里只为维持
+      // 分享 payload 的 positional 对齐（收集本已有提交，绝不删题/改题号），设 hidden 不再渲染。
       index: 1,
-      text: "这次家庭沙龙，整体你会打几分？",
+      text: "这次家庭沙龙，整体你会打几分？（已改版，见文末推荐意愿题）",
       dimension: "Q",
+      hidden: true,
       widget: "slider",
-      section: { title: "这次沙龙的感受" },
       options: [
         { value: 1, label: "1", short: "毫无收获" },
         { value: 2, label: "2" },
@@ -54,6 +56,7 @@ export const salonFollowup: Scale = {
       dimension: "Q",
       inputType: "multi",
       freeTextLabel: "还有别的？写一笔：",
+      section: { title: "这次沙龙的感受" },
       options: [
         { value: 1, label: "现场爸爸真实案例讨论" },
         { value: 2, label: "亲子沟通的练习 / 示范" },
@@ -132,6 +135,28 @@ export const salonFollowup: Scale = {
         { value: 2, label: "每月一次" },
         { value: 3, label: "每季度一次" },
         { value: 4, label: "有就参加，不强求" },
+      ],
+    },
+    // ============ 还想问你一句（放在具体反馈与需求之后，降低"总体评分"对前面回答的光环影响） ============
+    {
+      // 取代旧「整体打分」题：推荐意愿(NPS 思路)比总体满意度更能区分、更能显出"其实一般"的人。
+      // 用 1-10 滑杆（与站内既有滑杆同款、已在生产验证）。刻意放在具体题之后。
+      index: 9,
+      text: "你有多大可能把这样的活动推荐给其他家长？",
+      dimension: "Q",
+      widget: "slider",
+      section: { title: "还想问你一句" },
+      options: [
+        { value: 1, label: "1", short: "肯定不会" },
+        { value: 2, label: "2" },
+        { value: 3, label: "3" },
+        { value: 4, label: "4" },
+        { value: 5, label: "5" },
+        { value: 6, label: "6" },
+        { value: 7, label: "7" },
+        { value: 8, label: "8" },
+        { value: 9, label: "9" },
+        { value: 10, label: "10", short: "一定会推荐" },
       ],
     },
     // ============ 想被跟进的话（选填） ============
